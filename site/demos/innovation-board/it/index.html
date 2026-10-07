@@ -1,0 +1,246 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Innovation Board — Supporto multi-agente alle decisioni di investimento | Neuromorphic Inference Lab</title>
+  <meta name="description" content="Demo dal vivo: un board di sei agenti AI valuta un'idea di prodotto software fittizia, con controllo delle citazioni e filtro dei dati non verificati applicati dal codice, stime, flussi di cassa e ROI calcolati dal codice e una persona che prende ogni decisione di investimento." />
+  <link rel="canonical" href="https://www.neuromorphicinference.com/demos/innovation-board/it/" />
+  <link rel="alternate" hreflang="en" href="https://www.neuromorphicinference.com/demos/innovation-board/" />
+  <link rel="alternate" hreflang="it" href="https://www.neuromorphicinference.com/demos/innovation-board/it/" />
+  <link rel="alternate" hreflang="x-default" href="https://www.neuromorphicinference.com/demos/innovation-board/" />
+  <link rel="icon" href="/favicon.svg" />
+  <link rel="stylesheet" href="/style.css" />
+  <link rel="stylesheet" href="/demos/innovation-board/board.css" />
+</head>
+
+<body>
+  <header class="nav">
+    <div class="inner">
+      <a class="brand" href="/" aria-label="Neuromorphic Inference Lab, pagina iniziale">
+        <img src="/logo.svg" alt="Neuromorphic Inference Lab" />
+        <span>Neuromorphic Inference Lab</span>
+      </a>
+      <nav class="navlinks" aria-label="Navigazione principale">
+        <a data-nav href="/">Home</a>
+        <a data-nav href="/demos/">Progetti</a>
+        <a data-nav href="/about/">Chi sono</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="hero">
+      <nav class="lang-switch" aria-label="Lingua">
+        <a href="/demos/innovation-board/" hreflang="en" lang="en">English</a> · <span aria-current="page">Italiano</span>
+      </nav>
+      <p class="kicker">Guida dell'innovazione e dell'automazione · Supporto multi-agente alle decisioni</p>
+      <h1 class="h1">Innovation Board</h1>
+      <p class="sub">
+        Un board di sei agenti AI valuta il potenziale commerciale di un'idea di prodotto software e prepara una
+        sintesi per chi gestisce il budget. Ogni affermazione deve citare le evidenze, i dati inventati vengono
+        stralciati dal verbale e il codice calcola la stima di sviluppo, i flussi di cassa, il ROI, il VAN (NPV) e
+        il payback.
+      </p>
+      <div class="badges">
+        <span class="badge">Dibattito multi-agente</span>
+        <span class="badge">Tracciabilità delle evidenze</span>
+        <span class="badge">Filtro dei dati non verificati</span>
+        <span class="badge">PERT e flussi di cassa calcolati dal codice</span>
+        <span class="badge">Decisione umana</span>
+      </div>
+    </section>
+
+    <div class="ib-notice" role="note">
+      <span><strong>Azienda, idee e fonti fittizie (dati sintetici). Ricerca simulata. Solo supporto alle decisioni: ogni decisione di investimento spetta a una persona.</strong></span>
+      <span id="modeBadge" class="mode-badge" aria-live="polite">Verifica in corso…</span>
+    </div>
+
+    <section class="section card" aria-labelledby="setup-title">
+      <h2 id="setup-title">1 · Scegliere un'idea di prodotto</h2>
+      <form id="runForm">
+        <fieldset>
+          <legend>Idea (fittizia)</legend>
+          <div class="choice-grid" id="ideaChoices"><p class="small">Caricamento delle idee fittizie…</p></div>
+        </fieldset>
+        <details class="docs" id="docs">
+          <summary>Leggere la proposta e il profilo aziendale su cui lavora il board</summary>
+          <dl id="docList"></dl>
+        </details>
+        <div class="run-row">
+          <button class="btn primary" id="runButton" type="submit" disabled>Convocare il board</button>
+          <div class="speed" role="radiogroup" aria-label="Velocità di riproduzione">
+            <label><input type="radio" name="speed" value="normal" checked /><span>Normale</span></label>
+            <label><input type="radio" name="speed" value="fast" /><span>Veloce</span></label>
+          </div>
+          <button class="btn" id="skipButton" type="button" disabled>Vai alla sintesi</button>
+          <span id="runStatus" role="status"></span>
+        </div>
+      </form>
+    </section>
+
+    <section class="section card" aria-labelledby="research-title">
+      <h2 id="research-title" class="ib-title">2 · Ricerca (simulata)</h2>
+      <p class="research-note">
+        La ricerca è simulata: le fonti sono un pacchetto fisso di evidenze sintetiche, da otto a dieci brevi documenti
+        per idea, mostrati qui mentre ciascun agente li “recupera”. Prima del dibattito il codice esamina il pacchetto
+        e stralcia i dati delle fonti promozionali che non indicano un metodo né dati primari. Una versione di
+        produzione sostituirebbe il pacchetto con ricerca sul web, connettori ai dati interni e recupero di documenti,
+        mantenendo lo stesso controllo delle citazioni.
+      </p>
+      <div class="research-grid" id="research">
+        <p class="empty">Le fonti compaiono qui quando il board si riunisce.</p>
+      </div>
+    </section>
+
+    <div class="ib-layout">
+      <section class="card" aria-labelledby="transcript-title">
+        <h2 id="transcript-title" class="ib-title">3 · Dibattito del board</h2>
+        <div class="rounds" id="rounds">
+          <span class="round" data-round="1">Fase 1 · Valutazioni iniziali</span>
+          <span class="round" data-round="2">Fase 2 · Verifica e risposte</span>
+          <span class="round" data-round="3">Fase 3 · Business case e sintesi</span>
+        </div>
+        <ol id="transcript" aria-live="polite" aria-label="Verbale del board">
+          <li class="empty">Premere “Convocare il board” per seguire il dibattito dei sei agenti. Ogni turno è una richiesta al server, che verifica ogni citazione e ogni dato prima che i punteggi cambino.</li>
+        </ol>
+      </section>
+
+      <aside class="card" aria-labelledby="scores-title">
+        <h2 id="scores-title" class="ib-title">Punteggi calcolati dal codice</h2>
+        <div id="metrics"></div>
+        <div class="counters" aria-label="Contatori di verifica">
+          <div class="counter"><b id="cMade">0</b><span>affermazioni fatte</span></div>
+          <div class="counter"><b id="cAccepted">0</b><span>affermazioni accettate</span></div>
+          <div class="counter"><b id="cUnsupported">0</b><span>affermazioni non supportate</span></div>
+          <div class="counter" id="cStruckBox"><b id="cStruck">0</b><span>stralciate come dati non verificati</span></div>
+        </div>
+        <ul class="roster" id="roster" aria-label="Membri del board"></ul>
+      </aside>
+    </div>
+
+    <section class="section card" id="brief" hidden aria-labelledby="brief-title">
+      <h2 id="brief-title">4 · Sintesi per chi decide</h2>
+      <p class="small" id="briefIdea"></p>
+      <div class="outcome">
+        <span class="small">Classificazione del codice:</span>
+        <span id="tierLabel" class="outcome-label"></span>
+      </div>
+      <p class="small" id="tierRule"></p>
+      <p class="small" id="tierNote"></p>
+
+      <div class="brief-grid">
+        <div class="panel">
+          <h3>Profilo di valutazione (da 0 a 100)</h3>
+          <svg id="radar" viewBox="0 0 520 330" role="img" aria-labelledby="radarDesc"><desc id="radarDesc">Grafico radar delle sei metriche calcolate.</desc></svg>
+        </div>
+        <div class="panel">
+          <h3>Tempi e costi di sviluppo (PERT, intervallo all'80% circa)</h3>
+          <div class="figures" id="estimateFigures"></div>
+          <svg id="estimateChart" viewBox="0 0 400 96" role="img" aria-labelledby="estimateDesc"><desc id="estimateDesc">Intervallo del costo di sviluppo con il valore atteso.</desc></svg>
+          <div class="table-wrap"><table class="data" id="wpTable"></table></div>
+        </div>
+        <div class="panel">
+          <h3>Business case: tre scenari su tre anni</h3>
+          <svg id="npvChart" viewBox="0 0 400 150" role="img" aria-labelledby="npvDesc"><desc id="npvDesc">Valore attuale netto degli scenari pessimistico, base e ottimistico.</desc></svg>
+          <div class="table-wrap"><table class="data" id="scenarioTable"></table></div>
+          <p class="small" id="financeNote"></p>
+        </div>
+        <div class="panel">
+          <h3>Sensitività: che cosa muove il VAN dello scenario base</h3>
+          <svg id="tornado" viewBox="0 0 400 190" role="img" aria-labelledby="tornadoDesc"><desc id="tornadoDesc">Variazione del VAN dello scenario base quando ogni variabile percorre il proprio intervallo di evidenze.</desc></svg>
+          <p class="small" id="sensitivityNote"></p>
+        </div>
+        <div class="panel">
+          <h3>Ipotesi chiave (verificate sulle evidenze)</h3>
+          <ul class="list" id="assumptionList"></ul>
+        </div>
+        <div class="panel">
+          <h3>Che cosa farebbe cambiare idea al board</h3>
+          <ul class="list" id="mindList"></ul>
+          <h3 class="mt-12">Prossimo esperimento più economico</h3>
+          <div id="experiment"></div>
+        </div>
+        <div class="panel">
+          <h3>Registro dei disaccordi</h3>
+          <ul class="list" id="dissentList"></ul>
+        </div>
+        <div class="panel">
+          <h3>Traccia di verifica</h3>
+          <div class="stat-row">
+            <div class="stat"><b id="sMade">0</b><span>affermazioni fatte</span></div>
+            <div class="stat"><b id="sAccepted">0</b><span>affermazioni accettate</span></div>
+            <div class="stat"><b id="sUnsupported">0</b><span>affermazioni non supportate</span></div>
+            <div class="stat"><b id="sStruck">0</b><span>stralciate come dati non verificati</span></div>
+            <div class="stat"><b id="sScreened">0</b><span>passaggi delle fonti esclusi</span></div>
+            <div class="stat"><b id="sTokens">0</b><span>token LLM in questa esecuzione</span></div>
+          </div>
+          <p class="small mt-12" id="sMode"></p>
+        </div>
+      </div>
+
+      <div class="decision" aria-labelledby="decision-title">
+        <h3 id="decision-title">Decisione umana</h3>
+        <p class="small">La classificazione del board è un parere, non una decisione. La scelta compare solo su questa pagina: nulla viene salvato o inviato.</p>
+        <div class="decision-actions" id="decisionActions">
+          <button class="btn" type="button" data-decision="invest" aria-pressed="false">Investire ora</button>
+          <button class="btn" type="button" data-decision="pilot" aria-pressed="false">Avviare un progetto pilota</button>
+          <button class="btn" type="button" data-decision="explore" aria-pressed="false">Approfondire</button>
+          <button class="btn" type="button" data-decision="park" aria-pressed="false">Accantonare</button>
+        </div>
+        <p id="decisionRecord" role="status"></p>
+      </div>
+    </section>
+
+    <section class="section card how" aria-labelledby="how-title">
+      <h2 id="how-title">Come funziona</h2>
+      <ul class="clean">
+        <li><strong>Orchestrazione affidata al codice:</strong> la pagina segue un ordine fisso dei turni (tre valutazioni iniziali, una verifica con tre risposte, il business case in due passaggi, poi il Presidente), con un limite rigido di dieci turni. Ogni turno è una richiesta a una Cloudflare Pages Function.</li>
+        <li><strong>Un agente e un prompt compatto per turno:</strong> la Function costruisce per DeepSeek (API compatibile con OpenAI, limite di output ridotto, ragionamento disattivato) un prompt breve a partire dal profilo aziendale, dal pacchetto di evidenze e dallo stato dell'esecuzione. Chi visita la pagina sceglie solo un'idea da un elenco, quindi nessun testo libero arriva al modello.</li>
+        <li><strong>Nessuna sessione sul server:</strong> lo stato dell'esecuzione viaggia con ogni richiesta, firmato con un HMAC, e include la lingua, che non può cambiare durante l'esecuzione. Il server ne verifica struttura e firma prima di agire, quindi affermazioni, stime o ipotesi alterate vengono rifiutate.</li>
+        <li><strong>Controlli nel codice, non nel prompt:</strong> ogni citazione deve comparire testualmente nella fonte citata; ogni dato indicato da un agente deve trovarsi in una fonte che ha superato il filtro o essere calcolato dal codice in questa esecuzione, altrimenti la frase viene stralciata come “dato non verificato”; stime e ipotesi vengono confrontate con i loro intervalli; il codice calcola ogni punteggio, stima e risultato finanziario e applica la politica di investimento.</li>
+        <li><strong>Funziona anche senza LLM:</strong> se manca la chiave, il fornitore dà errore o un turno risulta non valido due volte, la pagina riproduce un'esecuzione dal vivo registrata con gli stessi controlli e calcoli, e il badge indica “Esecuzione registrata”.</li>
+      </ul>
+      <h3 class="mt-12">Formule (gli agenti propongono, il codice calcola)</h3>
+      <ul class="formula" id="formulaList">
+        <li>Punteggio di dimensione (coerenza strategica, domanda di mercato, fattibilità, rischio) = 20 × media dei punteggi da 1 a 5 accettati per quella dimensione, oppure 0 se non ce ne sono</li>
+        <li>Solidità delle evidenze = 100 × (accettate ÷ affermazioni fatte) × Σ q · punteggio ÷ (5 · Σ q), sulle affermazioni accettate, con qualità della fonte q = 1 primaria, 0,6 secondaria, 0,2 promozionale</li>
+        <li>Ritorno finanziario = limite(40 + 30 × ROI dello scenario base, 0, 100)</li>
+        <li>PERT per pacchetto di lavoro: E = (o + 4m + p) ÷ 6, σ = (p − o) ÷ 6; σ totale = √Σσ²; intervallo = E ± 1,28σ (confidenza dell'80% circa)</li>
+        <li>Durata in settimane = giorni-persona ÷ (persone del team × giorni produttivi a settimana); costo = Σ giorni-persona × tariffa giornaliera del ruolo</li>
+        <li>Clienti: C₀ = 0, Cₜ = Cₜ₋₁ × (1 − churn) + adozione; ricavo o risparmio nell'anno t = prezzo × (Cₜ₋₁ + Cₜ) ÷ 2; flusso di cassa netto = ricavo − costo di esercizio</li>
+        <li>VAN (NPV) = −costo di sviluppo + Σ flusso di cassa nettoₜ ÷ (1 + tasso di sconto)ᵗ, t = da 1 a 3; ROI = (Σ flusso di cassa netto − costo di sviluppo) ÷ costo di sviluppo</li>
+        <li>Payback = il mese in cui il flusso di cassa cumulato, che parte da −costo di sviluppo, arriva a zero (lineare all'interno dell'anno)</li>
+        <li>Scenari: il pessimistico e l'ottimistico prendono ogni ipotesi dall'estremo prudente o favorevole del suo intervallo di evidenze e il costo dall'estremo alto o basso del suo intervallo; lo scenario base usa i valori verificati dell'analista finanziario e il costo atteso. La sensitività muove una variabile alla volta lungo il suo intervallo.</li>
+        <li>Fasce, vale la prima soddisfatta: Investire ora se coerenza strategica ≥ 60, solidità delle evidenze ≥ 60, VAN base &gt; 0 e payback ≤ 24 mesi; Avviare un progetto pilota se coerenza ≥ 50, evidenze ≥ 45 e VAN base &gt; 0; Approfondire se il VAN ottimistico &gt; 0; altrimenti Accantonare.</li>
+      </ul>
+      <h3 class="mt-12">Limiti</h3>
+      <p class="lead">
+        I dati illustrano un metodo su informazioni inventate e non sono previsioni. L'azienda, le idee, i pacchetti di
+        evidenze, le tariffe e ogni numero sono fittizi, e la fase di ricerca è simulata. Gli importi della versione
+        italiana hanno gli stessi valori di quella inglese, espressi in euro. Un modello a tre anni con quattro ipotesi
+        non considera imposte, inflazione, finanziamento, cannibalizzazione e il costo opportunità del tempo del team.
+        Il modello linguistico può ancora fraintendere una fonte pur rispettando le regole: i controlli garantiscono
+        solo che ciò che conta sia riconducibile alle evidenze o al codice, non che sia corretto. Ogni decisione di
+        investimento spetta a una persona.
+      </p>
+      <p class="mt-12">
+        Codice sorgente e test:
+        <a class="text-link" href="https://github.com/nepryoon/innovation-board" target="_blank" rel="noopener noreferrer">github.com/nepryoon/innovation-board<span class="sr-only"> (si apre in una nuova scheda)</span></a>
+      </p>
+    </section>
+
+    <footer class="footer">
+      <div>© 2025 Neuromorphic Inference Lab</div>
+      <div class="prov">
+        <span id="build-branch">branch: …</span>
+        <span id="build-commit">commit: …</span>
+        <span id="build-time">built: …</span>
+      </div>
+    </footer>
+  </main>
+
+  <script src="/build-info.js"></script>
+  <script type="module" src="/demos/innovation-board/app.js"></script>
+</body>
+</html>

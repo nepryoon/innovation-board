@@ -2,24 +2,205 @@
 // The page only drives the turn order and animates; every check, estimate and financial result is
 // computed on the server. All values from the server are rendered with textContent, never as HTML.
 
+// --- Interface strings (begin) -------------------------------------------------------------
+// One dictionary per locale. The page's lang attribute picks one; the server sends the data and its
+// own sentences in the same locale. Values are strings or functions of preformatted strings only.
+const UI = {
+  en: {
+    metrics: { strategicFit: "Strategic fit", marketPull: "Market pull", feasibility: "Feasibility", evidenceStrength: "Evidence strength", financialReturn: "Financial return", risk: "Risk (higher = lower)" },
+    kinds: { opening: "Opening assessment", review: "Evidence audit", response: "Response to challenges", assumptions: "Financial assumptions", case: "Financial case", brief: "Closing brief" },
+    status: { accepted: "Accepted", unsupported: "Unsupported", struck: "Struck: unverified figure", clamped: "Clamped to evidence range" },
+    issues: { unsupported: "unsupported", optimistic: "optimistic", weak: "weakly supported", inconsistent: "inconsistent", unverified: "unverified figure" },
+    scenarios: { pessimistic: "Pessimistic", base: "Base", optimistic: "Optimistic" },
+    inputs: { price: "Price or saving", adoption: "Adoption", churn: "Churn or fallback", running: "Running cost", devCost: "Development cost" },
+    notWithin: "not within 3 years",
+    months: (m) => `${m} months`,
+    live: "Live LLM board",
+    recorded: "Recorded run",
+    liveTitle: (model) => `Each turn calls ${model} live`,
+    theLlm: "the LLM",
+    recordedTitle: "Replaying a recorded live run through the same checks and computations",
+    docPitch: "Pitch",
+    docCompany: "Company",
+    docPriorities: "Strategy priorities",
+    docProducts: "Products",
+    docCapacity: "Engineering capacity",
+    docRates: "Rate card (per day)",
+    docPolicy: "Investment policy",
+    policyLine: (rate, years, note) => `Discount rate ${rate}%, horizon ${years} years. ${note}`,
+    apiDown: "The demo API is unavailable right now. Please try again shortly.",
+    unavailable: "Unavailable",
+    profile: (p) => `Synthetic profile: ${p}`,
+    retrieved: "retrieved",
+    pending: "pending",
+    thinking: "thinking",
+    preparing: (name) => `${name} is preparing a turn`,
+    checkingQuote: "checking quote…",
+    challengeTo: (name, target, label) => `Challenge to ${name}’s ${target} · ${label}`,
+    challenged: "challenged",
+    revised: (id, label) => `Revised ${id} · ${label}`,
+    reEstimated: (wp, label) => `Re-estimated ${wp} · ${label}`,
+    days: "days",
+    rangeValid: "range valid",
+    range: (lo, hi) => `range ${lo} to ${hi}`,
+    screenSome: (n) => `Source screen (code, before the debate): ${n} ${n === "1" ? "passage" : "passages"} in promotional sources struck as unverified figures. Quotes from them cannot support a claim and their figures do not count.`,
+    screenNone: "Source screen (code, before the debate): no promotional passages with unverified figures in this evidence pack.",
+    round: (r, kind) => `Round ${r} · ${kind}`,
+    invalidReplies: (n) => `${n} invalid ${n === "1" ? "reply" : "replies"} rejected by the validator and retried`,
+    computedPert: "Computed by code (PERT)",
+    pertLine: (eLow, eHigh, wLow, wHigh, team, cLow, cHigh) => `${eLow} to ${eHigh} person-days, ${wLow} to ${wHigh} weeks for a squad of ${team}, cost ${cLow} to ${cHigh}. All ranges valid.`,
+    computed: "Computed by code",
+    npvLine: (pess, base, opt, roi, payback) => `NPV ${pess} / ${base} / ${opt} (pessimistic / base / optimistic); base ROI ${roi}%, payback ${payback}.`,
+    policyApplied: "Investment policy, applied by code",
+    overridden: (tier, chair) => `${tier}. The Chair suggested “${chair}”; the rule overrides it.`,
+    asSuggested: (tier) => `${tier}, as the Chair suggested.`,
+    tokens: (n) => `${n} tokens`,
+    effort: "Effort",
+    duration: "Duration",
+    cost: "Cost",
+    personDays: (lo, hi) => `${lo}–${hi} person-days`,
+    weeks: (lo, hi) => `${lo}–${hi} weeks`,
+    expected: (v) => `Expected ${v}`,
+    wpHead: ["Work package", "o / m / p days", "PERT E", "Cost"],
+    perDay: (role, rate) => `${role}, ${rate} a day`,
+    totalExpected: "Total (expected)",
+    npvZero: (zero) => `NPV ${zero}`,
+    scenarioHead: ["Scenario", "NPV", "ROI", "Payback"],
+    beyond36: "> 36 mo",
+    mo: (m) => `${m} mo`,
+    financeNote: (dev, nets, rate, years) => `Base case: development ${dev}; net cash flow by year ${nets}. Discount rate ${rate}%, ${years}-year horizon.`,
+    baseMarker: (v) => `base ${v}`,
+    sensitivityNote: (label, lo, hi) => `${label} moves the result most: across its evidence range the base-case NPV runs from ${lo} to ${hi}. Red: worse end of the range; green: better end.`,
+    briefIdea: (title, tagline, company) => `${title}: ${tagline}. ${company}.`,
+    ruleLine: (rule) => `Rule that produced it: ${rule}.`,
+    overrideNote: (chair, tier) => `Code overrides the Chair: the Chair suggested “${chair}”, but the investment policy gives “${tier}” on this evidence.`,
+    matchNote: (chair) => `The Chair suggested “${chair}”, which matches the policy.`,
+    inBase: (label, value) => `${label}: ${value} in the base case`,
+    rangeLine: (sources, lo, hi, pess, opt) => `Range from the evidence (${sources}): ${lo} to ${hi}; pessimistic ${pess}, optimistic ${opt}.`,
+    byCode: "Computed by code",
+    byChair: "Chair’s note (figures verified)",
+    experimentLine: (targets, weeks, cost, breakdown) => `Tests: ${targets}. ${weeks} weeks, ${cost} from the rate card (${breakdown}).`,
+    breakdownItem: (role, days, rate) => `${role} ${days} days × ${rate}`,
+    versus: " vs ",
+    noDissent: "No remaining disagreement was recorded.",
+    liveSummary: (model, turns, prompt, completion) => `Live LLM board (${model}) · ${turns} LLM turns · ${prompt} prompt and ${completion} completion tokens.`,
+    recordedSummary: (model) => `Recorded run${model ? ` (originally produced live by ${model})` : ""}: the same citation check, figure filter and computations ran on the recorded content.`,
+    decisionRecord: (time, choice, advised) => `Recorded on this page at ${time}: “${choice}”. The board advised “${advised}”.`,
+    departed: " You departed from the board’s advice; in a real process your reason would be logged with the decision.",
+    networkError: "network error",
+    gathering: "The agents are gathering evidence…",
+    inSession: "The board is in session…",
+    serviceError: (error) => `the board service answered with an error (${error})`,
+    switched: (reason) => `Switched to the recorded run: ${reason}. The same checks and computations run on the recorded content.`,
+    recordingFailed: (reason) => `The recorded run could not be loaded (${reason}). Please try again shortly.`,
+    skipping: "Skipping to the brief…"
+  },
+  it: {
+    metrics: { strategicFit: "Coerenza strategica", marketPull: "Domanda di mercato", feasibility: "Fattibilità", evidenceStrength: "Solidità delle evidenze", financialReturn: "Ritorno finanziario", risk: "Rischio (più alto = minore)" },
+    kinds: { opening: "Valutazione iniziale", review: "Verifica delle evidenze", response: "Risposta alle contestazioni", assumptions: "Ipotesi finanziarie", case: "Business case", brief: "Sintesi finale" },
+    status: { accepted: "Accettata", unsupported: "Non supportata", struck: "Stralciata: dato non verificato", clamped: "Riportata nell'intervallo delle evidenze" },
+    issues: { unsupported: "non supportata", optimistic: "ottimistica", weak: "debolmente supportata", inconsistent: "incoerente", unverified: "dato non verificato" },
+    scenarios: { pessimistic: "Pessimistico", base: "Base", optimistic: "Ottimistico" },
+    inputs: { price: "Prezzo o risparmio", adoption: "Adozione", churn: "Churn o rientro", running: "Costo di esercizio", devCost: "Costo di sviluppo" },
+    notWithin: "non raggiunto entro 3 anni",
+    months: (m) => `${m} mesi`,
+    live: "Board LLM dal vivo",
+    recorded: "Esecuzione registrata",
+    liveTitle: (model) => `Ogni turno chiama ${model} in tempo reale`,
+    theLlm: "l'LLM",
+    recordedTitle: "Riproduce un'esecuzione dal vivo registrata, con gli stessi controlli e calcoli",
+    docPitch: "Proposta",
+    docCompany: "Azienda",
+    docPriorities: "Priorità strategiche",
+    docProducts: "Prodotti",
+    docCapacity: "Capacità di sviluppo",
+    docRates: "Tariffe (al giorno)",
+    docPolicy: "Politica di investimento",
+    policyLine: (rate, years, note) => `Tasso di sconto ${rate}%, orizzonte di ${years} anni. ${note}`,
+    apiDown: "L'API della demo al momento non è disponibile. Riprovare tra poco.",
+    unavailable: "Non disponibile",
+    profile: (p) => `Profilo dell'idea: ${p}`,
+    retrieved: "acquisita",
+    pending: "in attesa",
+    thinking: "sta elaborando",
+    preparing: (name) => `${name} sta preparando il suo turno`,
+    checkingQuote: "verifica della citazione…",
+    challengeTo: (name, target, label) => `Contestazione ${/^[aeiou]/i.test(name) ? "ad" : "a"} ${name}, ${target} · ${label}`,
+    challenged: "contestata",
+    revised: (id, label) => `${id} rivista · ${label}`,
+    reEstimated: (wp, label) => `${wp} stimato di nuovo · ${label}`,
+    days: "giorni",
+    rangeValid: "intervallo valido",
+    range: (lo, hi) => `intervallo ${lo}–${hi}`,
+    screenSome: (n) => `Filtro delle fonti (codice, prima del dibattito): ${n === "1" ? "1 passaggio" : `${n} passaggi`} di fonti promozionali ${n === "1" ? "stralciato" : "stralciati"} come dati non verificati. Le citazioni tratte da questi passaggi non possono sostenere un'affermazione e i loro dati non contano.`,
+    screenNone: "Filtro delle fonti (codice, prima del dibattito): in questo pacchetto di evidenze non ci sono passaggi promozionali con dati non verificati.",
+    round: (r, kind) => `Fase ${r} · ${kind}`,
+    invalidReplies: (n) => (n === "1" ? "1 risposta non valida respinta dal validatore e ripetuta" : `${n} risposte non valide respinte dal validatore e ripetute`),
+    computedPert: "Calcolato dal codice (PERT)",
+    pertLine: (eLow, eHigh, wLow, wHigh, team, cLow, cHigh) => `da ${eLow} a ${eHigh} giorni-persona, da ${wLow} a ${wHigh} settimane per un team di ${team} persone, costo da ${cLow} a ${cHigh}. Tutti gli intervalli sono validi.`,
+    computed: "Calcolato dal codice",
+    npvLine: (pess, base, opt, roi, payback) => `VAN ${pess} / ${base} / ${opt} (pessimistico / base / ottimistico); ROI dello scenario base ${roi}%, payback ${payback}.`,
+    policyApplied: "Politica di investimento, applicata dal codice",
+    overridden: (tier, chair) => `${tier}. Il Presidente aveva suggerito “${chair}”: prevale la regola.`,
+    asSuggested: (tier) => `${tier}, come suggerito dal Presidente.`,
+    tokens: (n) => `${n} token`,
+    effort: "Impegno",
+    duration: "Durata",
+    cost: "Costo",
+    personDays: (lo, hi) => `${lo}–${hi} giorni-persona`,
+    weeks: (lo, hi) => `${lo}–${hi} settimane`,
+    expected: (v) => `Atteso ${v}`,
+    wpHead: ["Pacchetto di lavoro", "o / m / p (gg)", "PERT E", "Costo"],
+    perDay: (role, rate) => `${role}, ${rate} al giorno`,
+    totalExpected: "Totale (atteso)",
+    npvZero: (zero) => `VAN ${zero}`,
+    scenarioHead: ["Scenario", "VAN", "ROI", "Payback (mesi)"],
+    beyond36: "> 36",
+    mo: (m) => m,
+    financeNote: (dev, nets, rate, years) => `Scenario base: sviluppo ${dev}; flusso di cassa netto per anno ${nets}. Tasso di sconto ${rate}%, orizzonte di ${years} anni.`,
+    baseMarker: (v) => `base ${v}`,
+    sensitivityNote: (label, lo, hi) => `È la variabile “${label}” a incidere di più: nel suo intervallo di evidenze il VAN dello scenario base va da ${lo} a ${hi}. In rosso l'estremo peggiore dell'intervallo, in verde quello migliore.`,
+    briefIdea: (title, tagline, company) => `${title}: ${tagline}. ${company}.`,
+    ruleLine: (rule) => `Regola applicata: ${rule}.`,
+    overrideNote: (chair, tier) => `Il codice non segue il Presidente: il Presidente aveva suggerito “${chair}”, ma con queste evidenze la politica di investimento indica “${tier}”.`,
+    matchNote: (chair) => `Il Presidente ha suggerito “${chair}”, in linea con la politica di investimento.`,
+    inBase: (label, value) => `${label}: ${value} nello scenario base`,
+    rangeLine: (sources, lo, hi, pess, opt) => `Intervallo dalle evidenze (${sources}): ${lo}–${hi}; pessimistico ${pess}, ottimistico ${opt}.`,
+    byCode: "Calcolato dal codice",
+    byChair: "Nota del Presidente (dati verificati)",
+    experimentLine: (targets, weeks, cost, breakdown) => `Mette alla prova: “${targets}”. ${weeks} settimane, ${cost} secondo le tariffe (${breakdown}).`,
+    breakdownItem: (role, days, rate) => `${role} ${days} giorni × ${rate}`,
+    versus: " e ",
+    noDissent: "Non è rimasto alcun disaccordo da registrare.",
+    liveSummary: (model, turns, prompt, completion) => `Board LLM dal vivo (${model}) · ${turns} turni LLM · ${prompt} token di prompt e ${completion} token di risposta.`,
+    recordedSummary: (model) => `Esecuzione registrata${model ? ` (prodotta in origine dal vivo con ${model})` : ""}: sui contenuti registrati sono stati applicati gli stessi controlli delle citazioni, lo stesso filtro dei dati e gli stessi calcoli.`,
+    decisionRecord: (time, choice, advised) => `Decisione registrata su questa pagina alle ${time}: “${choice}”. Il board aveva consigliato “${advised}”.`,
+    departed: " La decisione si discosta dal parere del board: in un processo reale la motivazione verrebbe registrata insieme alla decisione.",
+    networkError: "errore di rete",
+    gathering: "Gli agenti stanno raccogliendo le evidenze…",
+    inSession: "Il board è riunito…",
+    serviceError: (error) => `il servizio del board ha risposto con un errore (${error})`,
+    switched: (reason) => `Passaggio all'esecuzione registrata: ${reason}. Sui contenuti registrati vengono eseguiti gli stessi controlli e calcoli.`,
+    recordingFailed: (reason) => `Non è stato possibile caricare l'esecuzione registrata (${reason}). Riprovare tra poco.`,
+    skipping: "Passaggio diretto alla sintesi…"
+  }
+};
+// --- Interface strings (end) ---------------------------------------------------------------
+
+const LOCALE = document.documentElement.lang.toLowerCase().startsWith("it") ? "it" : "en";
+const T = UI[LOCALE];
+
 const API = "/api/board/turn";
 const SVG_NS = "http://www.w3.org/2000/svg";
 const $ = (id) => document.getElementById(id);
 
-const METRICS = [
-  ["strategicFit", "Strategic fit"],
-  ["marketPull", "Market pull"],
-  ["feasibility", "Feasibility"],
-  ["evidenceStrength", "Evidence strength"],
-  ["financialReturn", "Financial return"],
-  ["risk", "Risk (higher = lower)"]
-];
-const KIND_LABELS = { opening: "Opening assessment", review: "Evidence audit", response: "Response to challenges", assumptions: "Financial assumptions", case: "Financial case", brief: "Closing brief" };
-const STATUS = { accepted: ["ok", "Accepted"], unsupported: ["warn", "Unsupported"], struck: ["bad", "Struck: unverified figure"], clamped: ["warn", "Clamped to evidence range"] };
-const ISSUE_LABELS = { unsupported: "unsupported", optimistic: "optimistic", weak: "weakly supported", inconsistent: "inconsistent", unverified: "unverified figure" };
-const SCENARIOS = [["pessimistic", "Pessimistic"], ["base", "Base"], ["optimistic", "Optimistic"]];
+const METRICS = Object.entries(T.metrics);
+const KIND_LABELS = T.kinds;
+const STATUS = { accepted: ["ok", T.status.accepted], unsupported: ["warn", T.status.unsupported], struck: ["bad", T.status.struck], clamped: ["warn", T.status.clamped] };
+const ISSUE_LABELS = T.issues;
+const SCENARIOS = Object.entries(T.scenarios);
 const RESEARCHERS = ["strategy", "market", "delivery"];
-const SHORT_INPUTS = { price: "Price or saving", adoption: "Adoption", churn: "Churn or fallback", running: "Running cost", devCost: "Development cost" };
+const SHORT_INPUTS = T.inputs;
 const PACE = { normal: 1, fast: 0.3 };
 
 let config = null;
@@ -45,21 +226,37 @@ function svg(tag, attrs = {}, text) {
   return node;
 }
 
+// Numbers: English as before; Italian with it-IT grouping and decimal comma, amounts in euro.
+const IT = LOCALE === "it";
+const num = (n) => (IT ? n.toLocaleString("it-IT", { useGrouping: "always", maximumFractionDigits: 1 }) : String(n));
 const sign = (n) => (n < 0 ? "−" : "");
-const money = (n) => `${sign(n)}£${Math.abs(Math.round(n)).toLocaleString("en-GB")}`;
+const money = (n) => (IT ? `${sign(n)}${Math.abs(Math.round(n)).toLocaleString("it-IT", { useGrouping: "always" })} €` : `${sign(n)}£${Math.abs(Math.round(n)).toLocaleString("en-GB")}`);
 function moneyShort(n) {
   const a = Math.abs(n);
+  if (IT) {
+    if (a >= 1e6) return `${sign(n)}${(a / 1e6).toLocaleString("it-IT", { maximumFractionDigits: 2 })} mln €`;
+    if (a >= 1e3) return `${sign(n)}${Math.round(a / 1e3).toLocaleString("it-IT", { useGrouping: "always" })} mila €`;
+    return money(n);
+  }
   if (a >= 1e6) return `${sign(n)}£${(a / 1e6).toLocaleString("en-GB", { maximumFractionDigits: 2 })}m`;
   if (a >= 1e3) return `${sign(n)}£${Math.round(a / 1e3).toLocaleString("en-GB")}k`;
   return money(n);
 }
-const months = (m) => (m === null ? "not within 3 years" : `${m} months`);
+// Table cells: Italian amounts in k€ and M€ so the columns fit at phone width; English unchanged.
+function moneyCell(n) {
+  const a = Math.abs(n);
+  if (!IT || a < 1e3) return moneyShort(n);
+  if (a >= 1e6) return `${sign(n)}${(a / 1e6).toLocaleString("it-IT", { maximumFractionDigits: 2 })} M€`;
+  return `${sign(n)}${Math.round(a / 1e3).toLocaleString("it-IT", { useGrouping: "always" })} k€`;
+}
+const months = (m) => (m === null ? T.notWithin : T.months(num(m)));
+const date = (iso) => (IT ? new Date(`${iso}T12:00:00Z`).toLocaleDateString("it-IT", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" }) : iso);
 const speed = () => document.querySelector('input[name="speed"]:checked')?.value || "normal";
 const reducedMotion = () => window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
 
 function fmtAssumption(unit, v) {
   if (unit === "gbp") return money(v);
-  if (unit === "percent") return `${v}%`;
+  if (unit === "percent") return `${num(v)}%`;
   return String(Math.round(v));
 }
 
@@ -98,8 +295,8 @@ function avatar(agent) {
 function setMode(mode, model) {
   const badge = $("modeBadge");
   badge.className = `mode-badge ${mode}`;
-  badge.textContent = mode === "live" ? "Live LLM board" : "Recorded run";
-  badge.title = mode === "live" ? `Each turn calls ${model || "the LLM"} live` : "Replaying a recorded live run through the same checks and computations";
+  badge.textContent = mode === "live" ? T.live : T.recorded;
+  badge.title = mode === "live" ? T.liveTitle(model || T.theLlm) : T.recordedTitle;
 }
 
 function choice(name, value, title, lines, checked) {
@@ -123,13 +320,13 @@ function renderDocs() {
   if (!idea) return;
   const c = config.company;
   const rows = [
-    ["Pitch", idea.pitch],
-    ["Company", `${c.name}. ${c.sector}. ${c.size}.`],
-    ["Strategy priorities", c.priorities.join("; ") + "."],
-    ["Products", c.products.join("; ") + "."],
-    ["Engineering capacity", c.capacity],
-    ["Rate card (per day)", Object.values(c.rateCard).map((r) => `${r.label} ${money(r.rate)}`).join(", ") + "."],
-    ["Investment policy", `Discount rate ${c.discountRate * 100}%, horizon ${c.horizonYears} years. ${config.policy.note}`]
+    [T.docPitch, idea.pitch],
+    [T.docCompany, `${c.name}. ${c.sector}. ${c.size}.`],
+    [T.docPriorities, c.priorities.join("; ") + "."],
+    [T.docProducts, c.products.join("; ") + "."],
+    [T.docCapacity, c.capacity],
+    [T.docRates, Object.values(c.rateCard).map((r) => `${r.label} ${money(r.rate)}`).join(", ") + "."],
+    [T.docPolicy, T.policyLine(num(c.discountRate * 100), String(c.horizonYears), config.policy.note)]
   ];
   $("docList").replaceChildren(...rows.flatMap(([dt, dd]) => [el("dt", "", dt), el("dd", "", dd)]));
 }
@@ -148,7 +345,7 @@ function renderMetricBars() {
     const row = el("div", "metric");
     row.dataset.metric = key;
     const head = el("div", "metric-head");
-    head.append(el("span", "", label), el("b", "", key === "financialReturn" ? "pending" : "0"));
+    head.append(el("span", "", label), el("b", "", key === "financialReturn" ? T.pending : "0"));
     const bar = el("div", "bar");
     bar.setAttribute("role", "meter");
     bar.setAttribute("aria-label", label);
@@ -163,18 +360,18 @@ function renderMetricBars() {
 
 async function loadConfig() {
   try {
-    const res = await fetch(API, { cache: "no-store" });
+    const res = await fetch(IT ? `${API}?locale=it` : API, { cache: "no-store" });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     config = await res.json();
   } catch {
-    $("ideaChoices").replaceChildren(el("p", "small", "The demo API is unavailable right now. Please try again shortly."));
-    $("modeBadge").textContent = "Unavailable";
+    $("ideaChoices").replaceChildren(el("p", "small", T.apiDown));
+    $("modeBadge").textContent = T.unavailable;
     return;
   }
   agents = Object.fromEntries(config.agents.map((a) => [a.id, a]));
   setMode(config.mode, config.model);
   $("ideaChoices").replaceChildren(...config.ideas.map((idea, i) =>
-    choice("idea", idea.id, idea.title, [idea.tagline, `Synthetic profile: ${idea.profile.toLowerCase()}`], i === 0)));
+    choice("idea", idea.id, idea.title, [idea.tagline, T.profile(idea.profile.toLowerCase())], i === 0)));
   $("ideaChoices").addEventListener("change", renderDocs);
   renderDocs();
   renderRoster();
@@ -196,7 +393,7 @@ async function revealSource(li, source) {
   li.classList.remove("retrieving");
   li.querySelector(".scan")?.remove();
   const head = li.querySelector(".source-head");
-  head.append(el("span", `pill ${source.grade === "promotional" ? "warn" : source.grade === "primary" ? "ok" : "info"}`, `${source.typeLabel} · ${source.date}`), el("span", "pill ok", "retrieved"));
+  head.append(el("span", `pill ${source.grade === "promotional" ? "warn" : source.grade === "primary" ? "ok" : "info"}`, `${source.typeLabel} · ${date(source.date)}`), el("span", "pill ok", T.retrieved));
   const p = el("p");
   const struck = [];
   source.segments.forEach((seg, i) => {
@@ -251,7 +448,7 @@ function updateMetrics(metrics) {
     const row = document.querySelector(`.metric[data-metric="${key}"]`);
     const value = metrics[key];
     const label = row.querySelector(".metric-head b");
-    if (value === null) { label.textContent = "pending"; continue; }
+    if (value === null) { label.textContent = T.pending; continue; }
     const before = lastMetrics && lastMetrics[key] !== null ? lastMetrics[key] : 0;
     row.querySelector(".bar i").style.width = `${value}%`;
     row.querySelector(".bar").setAttribute("aria-valuenow", String(value));
@@ -297,9 +494,9 @@ function messageShell(agent, subtitle) {
 
 function showTyping(agentId) {
   const agent = agents[agentId];
-  const { li, bubble } = messageShell(agent, "thinking");
+  const { li, bubble } = messageShell(agent, T.thinking);
   li.classList.add("typing");
-  bubble.replaceChildren(el("span", "", `${agent.name} is preparing a turn`));
+  bubble.replaceChildren(el("span", "", T.preparing(agent.name)));
   const dots = el("span", "dots");
   dots.append(el("i"), el("i"), el("i"));
   bubble.append(dots);
@@ -326,7 +523,7 @@ async function renderClaims(bubble, claims) {
     const li = el("li", "claim");
     li.dataset.claim = c.id;
     const head = el("div", "claim-head");
-    const status = el("span", "pill info", "checking quote…");
+    const status = el("span", "pill info", T.checkingQuote);
     head.append(el("b", "", `${c.id} · ${c.label}`), el("span", "score", `${c.score}/5`), el("span", "pill", c.source), status);
     li.append(head, el("q", "", c.quote));
     if (c.reason) li.append(el("div", "reason", c.reason));
@@ -362,12 +559,12 @@ function renderChallenges(bubble, challenges) {
   for (const ch of challenges) {
     const li = el("li", "claim");
     const head = el("div", "claim-head");
-    head.append(el("b", "", `Challenge to ${agents[ch.targetAgent].name}’s ${ch.target} · ${ch.label}`), el("span", "pill warn", ISSUE_LABELS[ch.issue] || ch.issue));
+    head.append(el("b", "", T.challengeTo(agents[ch.targetAgent].name, ch.target, ch.label)), el("span", "pill warn", ISSUE_LABELS[ch.issue] || ch.issue));
     li.append(head);
     if (ch.note) li.append(el("div", "reason", ch.note));
     list.append(li);
     const target = document.querySelector(`.claim[data-claim="${ch.target}"] .claim-head`);
-    if (target && !target.querySelector(".challenged")) target.append(el("span", "pill warn challenged", "challenged"));
+    if (target && !target.querySelector(".challenged")) target.append(el("span", "pill warn challenged", T.challenged));
   }
   bubble.append(list);
 }
@@ -379,7 +576,7 @@ async function renderRevisions(bubble, revisions, changes) {
   for (const rv of revisions) {
     const li = el("li", "claim flash");
     const head = el("div", "claim-head");
-    head.append(el("b", "", `Revised ${rv.claim} · ${rv.label}`), el("span", "score", `${rv.from}/5 → ${rv.to}/5`), el("span", `pill ${rv.status === "accepted" ? "info" : rv.status === "struck" ? "bad" : "warn"}`, rv.note));
+    head.append(el("b", "", T.revised(rv.claim, rv.label)), el("span", "score", `${rv.from}/5 → ${rv.to}/5`), el("span", `pill ${rv.status === "accepted" ? "info" : rv.status === "struck" ? "bad" : "warn"}`, rv.note));
     li.append(head);
     if (rv.reason) li.append(el("div", "reason", rv.reason));
     list.append(li);
@@ -391,7 +588,7 @@ async function renderRevisions(bubble, revisions, changes) {
   for (const ch of changes) {
     const li = el("li", "claim flash");
     const head = el("div", "claim-head");
-    head.append(el("b", "", `Re-estimated ${ch.wp} · ${ch.label}`), el("span", "score", `${ch.from.o}/${ch.from.m}/${ch.from.p} → ${ch.to.o}/${ch.to.m}/${ch.to.p} days`), el("span", "pill ok", "range valid"));
+    head.append(el("b", "", T.reEstimated(ch.wp, ch.label)), el("span", "score", `${ch.from.o}/${ch.from.m}/${ch.from.p} → ${ch.to.o}/${ch.to.m}/${ch.to.p} ${T.days}`), el("span", "pill ok", T.rangeValid));
     li.append(head);
     list.append(li);
     scrollTranscript();
@@ -410,7 +607,7 @@ function renderAssumptionItems(bubble, rows) {
   for (const a of rows) {
     const li = el("li", `claim ${a.status}`);
     const head = el("div", "claim-head");
-    head.append(el("b", "", a.label), el("span", "score", fmtAssumption(a.unit, a.value)), el("span", "pill", `range ${fmtAssumption(a.unit, a.low)} to ${fmtAssumption(a.unit, a.high)}`), pill(a.status));
+    head.append(el("b", "", a.label), el("span", "score", fmtAssumption(a.unit, a.value)), el("span", "pill", T.range(fmtAssumption(a.unit, a.low), fmtAssumption(a.unit, a.high))), pill(a.status));
     li.append(head);
     if (a.quote) li.append(el("q", "", a.quote));
     li.append(el("div", "note", a.note));
@@ -420,9 +617,7 @@ function renderAssumptionItems(bubble, rows) {
 }
 
 async function renderScreen(passages) {
-  addSystemNote(passages.length
-    ? `Source screen (code, before the debate): ${passages.length} ${passages.length === 1 ? "passage" : "passages"} in promotional sources struck as unverified figures. Quotes from them cannot support a claim and their figures do not count.`
-    : "Source screen (code, before the debate): no promotional passages with unverified figures in this evidence pack.");
+  addSystemNote(passages.length ? T.screenSome(String(passages.length)) : T.screenNone);
   await wait(400);
 }
 
@@ -430,11 +625,11 @@ async function renderTurn(event) {
   if (event.sourceScreen) await renderScreen(event.sourceScreen);
   const agent = agents[event.agent];
   setSpeaker(event.agent, event.round);
-  const { li, bubble } = messageShell(agent, `Round ${event.round} · ${KIND_LABELS[event.kind]}`);
+  const { li, bubble } = messageShell(agent, T.round(event.round, KIND_LABELS[event.kind]));
   $("transcript").append(li);
   const struck = renderSentences(bubble, event.sentences);
   if (event.invalidReplies?.length) {
-    bubble.append(el("span", "pill warn", `${event.invalidReplies.length} invalid ${event.invalidReplies.length === 1 ? "reply" : "replies"} rejected by the validator and retried`));
+    bubble.append(el("span", "pill warn", T.invalidReplies(String(event.invalidReplies.length))));
   }
   scrollTranscript();
   await wait(500);
@@ -446,16 +641,16 @@ async function renderTurn(event) {
   await renderRevisions(bubble, event.revisions, event.estimateChanges || []);
   if (event.estimate) {
     const e = event.estimate;
-    computedLine(bubble, "Computed by code (PERT)", `${e.effort.low} to ${e.effort.high} person-days, ${e.weeks.low} to ${e.weeks.high} weeks for a squad of ${e.teamSize}, cost ${moneyShort(e.cost.low)} to ${moneyShort(e.cost.high)}. All ranges valid.`);
+    computedLine(bubble, T.computedPert, T.pertLine(num(e.effort.low), num(e.effort.high), num(e.weeks.low), num(e.weeks.high), String(e.teamSize), moneyShort(e.cost.low), moneyShort(e.cost.high)));
   }
   if (event.assumptions) renderAssumptionItems(bubble, event.assumptions);
   if (event.finance) {
     const s = event.finance.scenarios;
-    computedLine(bubble, "Computed by code", `NPV ${moneyShort(s.pessimistic.npv)} / ${moneyShort(s.base.npv)} / ${moneyShort(s.optimistic.npv)} (pessimistic / base / optimistic); base ROI ${s.base.roiPercent}%, payback ${months(s.base.paybackMonths)}.`);
+    computedLine(bubble, T.computed, T.npvLine(moneyShort(s.pessimistic.npv), moneyShort(s.base.npv), moneyShort(s.optimistic.npv), num(s.base.roiPercent), months(s.base.paybackMonths)));
   }
-  if (event.tier) computedLine(bubble, "Investment policy, applied by code", event.tier.overridden ? `${event.tier.label}. The Chair suggested “${event.tier.chairSuggestion}”; the rule overrides it.` : `${event.tier.label}, as the Chair suggested.`);
+  if (event.tier) computedLine(bubble, T.policyApplied, event.tier.overridden ? T.overridden(event.tier.label, event.tier.chairSuggestion) : T.asSuggested(event.tier.label));
   for (const note of event.notes || []) bubble.append(el("p", "small", note));
-  if (event.usage) bubble.append(el("p", "small", `${event.usage.promptTokens + event.usage.completionTokens} tokens`));
+  if (event.usage) bubble.append(el("p", "small", T.tokens(num(event.usage.promptTokens + event.usage.completionTokens))));
   updateMetrics(event.metrics);
   updateCounters(event.counters);
   scrollTranscript();
@@ -486,7 +681,9 @@ function renderRadar(metrics) {
     const [lx, ly] = point(i, 118);
     const anchor = Math.abs(lx - cx) < 10 ? "middle" : lx > cx ? "start" : "end";
     const text = svg("text", { x: lx, y: ly + (ly < cy - 10 ? -8 : ly > cy + 10 ? 12 : 0), "text-anchor": anchor, "font-size": 14 });
-    text.append(svg("tspan", { x: lx, dy: 0 }, label));
+    // Labels longer than the English ones break before their bracket: "Rischio / (più alto = minore)".
+    const lines = label.length > 22 && label.includes(" (") ? [label.slice(0, label.indexOf(" (")), label.slice(label.indexOf(" (") + 1)] : [label];
+    lines.forEach((line, n) => text.append(svg("tspan", { x: lx, dy: n ? 16 : lines.length > 1 && ly < cy ? -16 : 0 }, line)));
     text.append(svg("tspan", { x: lx, dy: 17, "font-weight": 700, fill: "#EAF0FF" }, String(metrics[key] ?? 0)));
     root.append(text);
   });
@@ -516,9 +713,9 @@ function figure(label, value) {
 
 function renderEstimate(e) {
   $("estimateFigures").replaceChildren(
-    figure("Effort", `${e.effort.low}–${e.effort.high} person-days`),
-    figure("Duration", `${e.weeks.low}–${e.weeks.high} weeks`),
-    figure("Cost", `${moneyShort(e.cost.low)}–${moneyShort(e.cost.high)}`)
+    figure(T.effort, T.personDays(num(e.effort.low), num(e.effort.high))),
+    figure(T.duration, T.weeks(num(e.weeks.low), num(e.weeks.high))),
+    figure(T.cost, `${moneyShort(e.cost.low)}–${moneyShort(e.cost.high)}`)
   );
   const root = clearSvg("estimateChart");
   const lo = e.cost.low - (e.cost.high - e.cost.low) * 0.6;
@@ -527,21 +724,21 @@ function renderEstimate(e) {
   root.append(svg("rect", { x: 20, y: 40, width: 360, height: 12, rx: 6, fill: "rgba(255,255,255,.06)" }));
   root.append(svg("rect", { x: x(e.cost.low), y: 36, width: x(e.cost.high) - x(e.cost.low), height: 20, rx: 4, fill: "rgba(52,211,153,.25)", stroke: "#34D399" }));
   root.append(svg("line", { x1: x(e.cost.expected), y1: 30, x2: x(e.cost.expected), y2: 62, stroke: "#EAF0FF", "stroke-width": 2 }));
-  root.append(svg("text", { x: x(e.cost.expected), y: 22, "text-anchor": "middle", "font-size": 13, "font-weight": 700, fill: "#EAF0FF" }, `Expected ${moneyShort(e.cost.expected)}`));
+  root.append(svg("text", { x: x(e.cost.expected), y: 22, "text-anchor": "middle", "font-size": 13, "font-weight": 700, fill: "#EAF0FF" }, T.expected(moneyShort(e.cost.expected))));
   root.append(svg("text", { x: x(e.cost.low), y: 80, "text-anchor": "middle", "font-size": 12 }, `P10 ${moneyShort(e.cost.low)}`));
   root.append(svg("text", { x: x(e.cost.high), y: 80, "text-anchor": "middle", "font-size": 12 }, `P90 ${moneyShort(e.cost.high)}`));
 
   const head = el("tr");
-  ["Work package", "o / m / p days", "PERT E", "Cost"].forEach((h, i) => head.append(el("th", i > 1 ? "num" : "", h)));
+  T.wpHead.forEach((h, i) => head.append(el("th", i > 1 ? "num" : "", h)));
   const rows = e.packages.map((p) => {
     const tr = el("tr");
     const name = el("td", "", p.label);
-    name.append(el("div", "small", `${p.role}, ${money(p.rate)} a day`));
-    tr.append(name, el("td", "num", `${p.o} / ${p.m} / ${p.p}`), el("td", "num", String(p.expected)), el("td", "num", moneyShort(p.cost)));
+    name.append(el("div", "small", T.perDay(p.role, money(p.rate))));
+    tr.append(name, el("td", "num", `${p.o} / ${p.m} / ${p.p}`), el("td", "num", num(p.expected)), el("td", "num", moneyCell(p.cost)));
     return tr;
   });
   const total = el("tr", "base");
-  total.append(el("td", "", "Total (expected)"), el("td", "num", ""), el("td", "num", String(e.effort.expected)), el("td", "num", moneyShort(e.cost.expected)));
+  total.append(el("td", "", T.totalExpected), el("td", "num", ""), el("td", "num", num(e.effort.expected)), el("td", "num", moneyCell(e.cost.expected)));
   $("wpTable").replaceChildren(head, ...rows, total);
 }
 
@@ -554,7 +751,7 @@ function renderFinance(f) {
   const zero = hasNeg && hasPos ? 120 + 260 * (Math.abs(Math.min(...values)) / (Math.abs(Math.min(...values)) + Math.max(...values))) : hasNeg ? 380 : 120;
   const scale = hasNeg && hasPos ? 260 / (Math.abs(Math.min(...values)) + Math.max(...values)) : 260 / max;
   root.append(svg("line", { x1: zero, y1: 8, x2: zero, y2: 132, stroke: "rgba(234,240,255,.5)" }));
-  root.append(svg("text", { x: zero, y: 146, "text-anchor": "middle", "font-size": 11 }, "NPV £0"));
+  root.append(svg("text", { x: zero, y: 146, "text-anchor": "middle", "font-size": 11 }, T.npvZero(money(0))));
   SCENARIOS.forEach(([key, label], i) => {
     const v = f.scenarios[key].npv;
     const y = 14 + i * 40;
@@ -570,16 +767,16 @@ function renderFinance(f) {
   });
 
   const head = el("tr");
-  ["Scenario", "NPV", "ROI", "Payback"].forEach((h, i) => head.append(el("th", i ? "num" : "", h)));
+  T.scenarioHead.forEach((h, i) => head.append(el("th", i ? "num" : "", h)));
   const rows = SCENARIOS.map(([key, label]) => {
     const s = f.scenarios[key];
     const tr = el("tr", key === "base" ? "base" : "");
-    tr.append(el("td", "", label), el("td", "num", moneyShort(s.npv)), el("td", "num", `${s.roiPercent}%`), el("td", "num", s.paybackMonths === null ? "> 36 mo" : `${s.paybackMonths} mo`));
+    tr.append(el("td", "", label), el("td", "num", moneyCell(s.npv)), el("td", "num", `${num(s.roiPercent)}%`), el("td", "num", s.paybackMonths === null ? T.beyond36 : T.mo(num(s.paybackMonths))));
     return tr;
   });
   $("scenarioTable").replaceChildren(head, ...rows);
   const b = f.scenarios.base;
-  $("financeNote").textContent = `Base case: development ${moneyShort(b.inputs.devCost)}; net cash flow by year ${b.rows.map((r) => moneyShort(r.net)).join(", ")}. Discount rate ${Math.round(f.discountRate * 100)}%, ${f.horizonYears}-year horizon.`;
+  $("financeNote").textContent = T.financeNote(moneyShort(b.inputs.devCost), b.rows.map((r) => moneyShort(r.net)).join(IT ? "; " : ", "), String(Math.round(f.discountRate * 100)), String(f.horizonYears));
 }
 
 function renderTornado(f) {
@@ -599,24 +796,24 @@ function renderTornado(f) {
     root.append(svg("rect", { x: a, y, width: Math.max(2, x(base) - a), height: 18, fill: "rgba(248,113,113,.5)" }));
     root.append(svg("rect", { x: x(base), y, width: Math.max(2, b - x(base)), height: 18, fill: "rgba(52,211,153,.5)" }));
   });
-  root.append(svg("text", { x: x(base), y: 24 + rows.length * 32 - 2, "text-anchor": "middle", "font-size": 11 }, `base ${moneyShort(base)}`));
+  root.append(svg("text", { x: x(base), y: 24 + rows.length * 32 - 2, "text-anchor": "middle", "font-size": 11 }, T.baseMarker(moneyShort(base))));
   const top = f.top;
-  $("sensitivityNote").textContent = `${top.label} moves the result most: across its evidence range the base-case NPV runs from ${moneyShort(rows[0].npvWorst)} to ${moneyShort(rows[0].npvBest)}. Red: worse end of the range; green: better end.`;
+  $("sensitivityNote").textContent = T.sensitivityNote(top.label, moneyShort(rows[0].npvWorst), moneyShort(rows[0].npvBest));
 }
 
 function renderBrief(brief, model) {
   $("brief").hidden = false;
   const idea = config.ideas.find((i) => i.id === brief.ideaId);
-  $("briefIdea").textContent = `${idea.title}: ${idea.tagline}. ${config.company.name}.`;
+  $("briefIdea").textContent = T.briefIdea(idea.title, idea.tagline, config.company.name);
   const label = $("tierLabel");
   label.textContent = brief.tier.label;
   label.className = `outcome-label ${brief.tier.id}`;
-  $("tierRule").textContent = `Rule that produced it: ${brief.tier.rule}.`;
+  $("tierRule").textContent = T.ruleLine(brief.tier.rule);
   const note = $("tierNote");
   note.className = brief.tier.overridden ? "small override" : "small";
   note.textContent = brief.tier.overridden
-    ? `Code overrides the Chair: the Chair suggested “${brief.tier.chairSuggestion}”, but the investment policy gives “${brief.tier.label}” on this evidence.`
-    : brief.tier.chairSuggestion ? `The Chair suggested “${brief.tier.chairSuggestion}”, which matches the policy.` : "";
+    ? T.overrideNote(brief.tier.chairSuggestion, brief.tier.label)
+    : brief.tier.chairSuggestion ? T.matchNote(brief.tier.chairSuggestion) : "";
   renderRadar(brief.metrics);
   renderEstimate(brief.estimate);
   renderFinance(brief.finance);
@@ -624,30 +821,30 @@ function renderBrief(brief, model) {
 
   $("assumptionList").replaceChildren(...brief.assumptions.map((a) => {
     const s = brief.finance.scenarios;
-    const li = el("li", "", `${a.label}: ${fmtAssumption(a.unit, a.value)} in the base case`);
-    li.append(el("span", "", `Range from the evidence (${a.rangeSources.join(", ")}): ${fmtAssumption(a.unit, a.low)} to ${fmtAssumption(a.unit, a.high)}; pessimistic ${fmtAssumption(a.unit, s.pessimistic.inputs[a.key])}, optimistic ${fmtAssumption(a.unit, s.optimistic.inputs[a.key])}.`));
+    const li = el("li", "", T.inBase(a.label, fmtAssumption(a.unit, a.value)));
+    li.append(el("span", "", T.rangeLine(a.rangeSources.join(", "), fmtAssumption(a.unit, a.low), fmtAssumption(a.unit, a.high), fmtAssumption(a.unit, s.pessimistic.inputs[a.key]), fmtAssumption(a.unit, s.optimistic.inputs[a.key]))));
     li.append(el("span", "", `${STATUS[a.status][1]}. ${a.note}`));
     return li;
   }));
 
   $("mindList").replaceChildren(...brief.mindChangers.map((m) => {
     const li = el("li", "", m.text);
-    li.append(el("span", "", m.by === "code" ? "Computed by code" : "Chair’s note (figures verified)"));
+    li.append(el("span", "", m.by === "code" ? T.byCode : T.byChair));
     return li;
   }));
   const x = brief.experiment;
   const exp = el("ul", "list");
   const item = el("li", "", x.label);
-  item.append(el("span", "", `Tests: ${x.targets}. ${x.weeks} weeks, ${money(x.cost)} from the rate card (${x.breakdown.map((b) => `${b.role} ${b.days} days × ${money(b.rate)}`).join(", ")}).`));
+  item.append(el("span", "", T.experimentLine(x.targets, String(x.weeks), money(x.cost), x.breakdown.map((b) => T.breakdownItem(b.role, String(b.days), money(b.rate))).join(", "))));
   item.append(el("span", "", x.reason));
   exp.append(item);
   $("experiment").replaceChildren(exp);
 
   $("dissentList").replaceChildren(...(brief.dissent.length ? brief.dissent.map((d) => {
-    const li = el("li", "", `${d.agents.map((id) => agents[id].name).join(" vs ")} · ${d.topic}`);
+    const li = el("li", "", `${d.agents.map((id) => agents[id].name).join(T.versus)} · ${d.topic}`);
     li.append(el("span", "", d.note));
     return li;
-  }) : [el("li", "", "No remaining disagreement was recorded.")]));
+  }) : [el("li", "", T.noDissent)]));
 
   const c = brief.counters;
   $("sMade").textContent = String(c.claimsMade);
@@ -655,10 +852,10 @@ function renderBrief(brief, model) {
   $("sUnsupported").textContent = String(c.unsupported);
   $("sStruck").textContent = String(c.struckFigures);
   $("sScreened").textContent = String(c.screenedPassages);
-  $("sTokens").textContent = brief.mode === "live" ? String(brief.usage.promptTokens + brief.usage.completionTokens) : "0";
+  $("sTokens").textContent = brief.mode === "live" ? num(brief.usage.promptTokens + brief.usage.completionTokens) : "0";
   $("sMode").textContent = brief.mode === "live"
-    ? `Live LLM board (${model}) · ${brief.usage.llmTurns} LLM turns · ${brief.usage.promptTokens} prompt and ${brief.usage.completionTokens} completion tokens.`
-    : `Recorded run${model ? ` (originally produced live by ${model})` : ""}: the same citation check, figure filter and computations ran on the recorded content.`;
+    ? T.liveSummary(model, String(brief.usage.llmTurns), num(brief.usage.promptTokens), num(brief.usage.completionTokens))
+    : T.recordedSummary(model);
 
   document.querySelectorAll("#decisionActions button").forEach((b) => b.setAttribute("aria-pressed", "false"));
   $("decisionRecord").textContent = "";
@@ -671,11 +868,10 @@ $("decisionActions").addEventListener("click", (event) => {
   const button = event.target.closest("button[data-decision]");
   if (!button) return;
   document.querySelectorAll("#decisionActions button").forEach((b) => b.setAttribute("aria-pressed", String(b === button)));
-  const time = new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
+  const time = new Date().toLocaleTimeString(IT ? "it-IT" : "en-GB", { hour: "2-digit", minute: "2-digit" });
   const advised = $("tierLabel").textContent;
   const differs = button.dataset.decision !== $("decisionActions").dataset.tier;
-  $("decisionRecord").textContent = `Recorded on this page at ${time}: “${button.textContent}”. The board advised “${advised}”.`
-    + (differs ? " You departed from the board’s advice; in a real process your reason would be logged with the decision." : "");
+  $("decisionRecord").textContent = T.decisionRecord(time, button.textContent, advised) + (differs ? T.departed : "");
 });
 
 // --- Run loop: one request per turn, the next one prefetched while this one animates ------
@@ -687,7 +883,7 @@ async function requestTurn(body) {
     if (!res.ok) return { httpError: data.error || `HTTP ${res.status}` };
     return data;
   } catch {
-    return { httpError: "network error" };
+    return { httpError: T.networkError };
   }
 }
 
@@ -705,12 +901,12 @@ async function run(ideaId, mode, notice) {
   resetView();
   setMode(mode, config.model);
   const order = config.turnOrder;
-  let pending = requestTurn({ start: { ideaId, mode } });
+  let pending = requestTurn({ start: { ideaId, mode, locale: LOCALE } });
   if (!notice) {
-    $("runStatus").textContent = "The agents are gathering evidence…";
+    $("runStatus").textContent = T.gathering;
     await renderResearch(config.ideas.find((i) => i.id === ideaId));
     if (token !== runToken) return;
-    $("runStatus").textContent = "The board is in session…";
+    $("runStatus").textContent = T.inSession;
   } else addSystemNote(notice);
   for (let i = 0; i < order.length; i++) {
     const typing = showTyping(order[i].agent);
@@ -719,9 +915,9 @@ async function run(ideaId, mode, notice) {
     if (token !== runToken) return;
     typing.remove();
     if (res.fallback || res.httpError) {
-      const reason = res.reason || `the board service answered with an error (${res.httpError})`;
-      if (mode === "live") return run(ideaId, "recorded", `Switched to the recorded run: ${reason.replace(/\.$/, "")}. The same checks and computations run on the recorded content.`);
-      addSystemNote(`The recorded run could not be loaded (${res.httpError || reason}). Please try again shortly.`);
+      const reason = res.reason || T.serviceError(res.httpError);
+      if (mode === "live") return run(ideaId, "recorded", T.switched(reason.replace(/\.$/, "")));
+      addSystemNote(T.recordingFailed(res.httpError || reason));
       return;
     }
     setMode(res.mode, res.model);
@@ -757,7 +953,7 @@ $("runForm").addEventListener("submit", async (event) => {
 $("skipButton").addEventListener("click", () => {
   skipping = true;
   $("skipButton").disabled = true;
-  $("runStatus").textContent = "Skipping to the brief…";
+  $("runStatus").textContent = T.skipping;
 });
 
 loadConfig();
