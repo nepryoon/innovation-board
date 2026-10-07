@@ -2,9 +2,10 @@
 
 import { readFile } from "node:fs/promises";
 import { onRequestPost } from "../functions/api/board/turn.js";
+import { recordingPath } from "../config/board/http.js";
 
-export async function loadRecording(ideaId) {
-  const url = new URL(`../demos/innovation-board/recordings/${ideaId}.json`, import.meta.url);
+export async function loadRecording(ideaId, locale) {
+  const url = new URL(`..${recordingPath(ideaId, locale)}`, import.meta.url);
   return JSON.parse(await readFile(url, "utf8"));
 }
 
@@ -18,9 +19,9 @@ export function postTurn(body, env = {}, deps = {}) {
 }
 
 // Drives a whole run through the Function, one request per turn, as the page does.
-export async function runAll(ideaId, env = {}, deps = {}) {
+export async function runAll(ideaId, env = {}, deps = {}, locale) {
   const responses = [];
-  let res = await (await postTurn({ start: { ideaId, mode: env.DEEPSEEK_API_KEY ? "live" : "recorded" } }, env, deps)).json();
+  let res = await (await postTurn({ start: { ideaId, mode: env.DEEPSEEK_API_KEY ? "live" : "recorded", ...(locale ? { locale } : {}) } }, env, deps)).json();
   responses.push(res);
   while (res.state && !res.done) {
     res = await (await postTurn({ state: res.state }, env, deps)).json();
