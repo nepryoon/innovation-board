@@ -1,0 +1,402 @@
+{
+  "synthetic": true,
+  "note": "Recorded live board run on synthetic data. Replayed through the same citation check, figure filter and computations.",
+  "ideaId": "field-copilot",
+  "model": "deepseek-flash",
+  "recordedAt": "2026-10-07",
+  "turns": [
+    {
+      "agent": "strategy",
+      "round": 1,
+      "kind": "opening",
+      "output": {
+        "message": "The idea fits our add-on priority but not our capabilities or customer evidence. Report writing is the real pain, not diagnosis. Voice notes rank 23rd of 40. Photo diagnosis is unsafe and costly, and no customer has asked for it.",
+        "claims": [
+          {
+            "dimension": "fit",
+            "score": 4,
+            "source": "s1",
+            "quote": "Early adopters report first-time fix rates rising by 40%.",
+            "reason": "Premium add-on aligns with growing existing customers, but evidence is from a trend article."
+          },
+          {
+            "dimension": "fit",
+            "score": 3,
+            "source": "s4",
+            "quote": "What would help is the report writing; that takes them 20 minutes a job.",
+            "reason": "Customer pain is report writing, not diagnosis, so scope should be narrowed."
+          },
+          {
+            "dimension": "fit",
+            "score": 2,
+            "source": "s6",
+            "quote": "Three of 9,800 support tickets asked for AI features.",
+            "reason": "Almost no customer demand for AI features; report writing tickets are about reliability."
+          },
+          {
+            "dimension": "fit",
+            "score": 2,
+            "source": "s7",
+            "quote": "It named the correct fault 58% of the time, and technicians judged one answer in five unsafe to act on.",
+            "reason": "Photo diagnosis is unsafe and costly, conflicting with keeping the core platform reliable."
+          }
+        ]
+      },
+      "usage": {
+        "promptTokens": 1370,
+        "completionTokens": 342
+      },
+      "invalidReplies": []
+    },
+    {
+      "agent": "market",
+      "round": 1,
+      "kind": "opening",
+      "output": {
+        "message": "Sources give a £48bn AI field-service market by 2030, 37% yearly growth, 40% first-time-fix gains, and 70% visit adoption in five years. But these are vendor or keynote claims without data. Customer evidence shows weak willingness to pay and safety worries. I would weight the market forecasts lightly and the customer survey and support data heavily.",
+        "claims": [
+          {
+            "dimension": "market",
+            "score": 2,
+            "source": "s1",
+            "quote": "the AI field-service market will reach £48bn by 2030, growing 37% a year",
+            "reason": "Large headline forecast, but trend article with no cited methodology; treat as weak evidence."
+          },
+          {
+            "dimension": "market",
+            "score": 2,
+            "source": "s3",
+            "quote": "70% of maintenance visits will involve an AI assistant within five years",
+            "reason": "Bold adoption claim from keynote, explicitly unsourced; low weight."
+          },
+          {
+            "dimension": "market",
+            "score": 4,
+            "source": "s5",
+            "quote": "five said they were interested in an AI assistant for technicians, two said they would pay for it",
+            "reason": "Small but concrete customer survey; shows interest exists but paying intent is thin."
+          },
+          {
+            "dimension": "market",
+            "score": 4,
+            "source": "s6",
+            "quote": "Three of 9,800 support tickets asked for AI features",
+            "reason": "Hard support data: negligible existing demand for AI within the installed base."
+          }
+        ]
+      },
+      "usage": {
+        "promptTokens": 1388,
+        "completionTokens": 368
+      },
+      "invalidReplies": []
+    },
+    {
+      "agent": "delivery",
+      "round": 1,
+      "kind": "opening",
+      "output": {
+        "message": "Feasibility is moderate: diagnosis accuracy is unproven and labelled data is scarce. Risk is high: safety concerns and weak customer demand. Estimates below assume the free squad of five, four productive days a week each.",
+        "claims": [
+          {
+            "dimension": "feasibility",
+            "score": 2,
+            "source": "s7",
+            "quote": "It named the correct fault 58% of the time",
+            "reason": "Accuracy far too low for safe autonomous diagnosis in the field."
+          },
+          {
+            "dimension": "feasibility",
+            "score": 3,
+            "source": "s6",
+            "quote": "Report writing in Brindle Field produced 410 tickets",
+            "reason": "Existing report-writing pain is real and could be automated."
+          },
+          {
+            "dimension": "risk",
+            "score": 2,
+            "source": "s5",
+            "quote": "seven were worried about wrong diagnoses on gas or electrical faults",
+            "reason": "Safety liability on gas and electrical faults is a major risk."
+          },
+          {
+            "dimension": "risk",
+            "score": 2,
+            "source": "s8",
+            "quote": "Analysts expect churn on early AI add-ons to run between 15% and 35% a year",
+            "reason": "High churn would undermine the premium add-on business case."
+          }
+        ],
+        "estimates": [
+          {
+            "wp": "w1",
+            "o": 40,
+            "m": 70,
+            "p": 140
+          },
+          {
+            "wp": "w2",
+            "o": 30,
+            "m": 60,
+            "p": 120
+          },
+          {
+            "wp": "w3",
+            "o": 25,
+            "m": 40,
+            "p": 80
+          },
+          {
+            "wp": "w4",
+            "o": 20,
+            "m": 35,
+            "p": 70
+          },
+          {
+            "wp": "w5",
+            "o": 15,
+            "m": 30,
+            "p": 60
+          }
+        ]
+      },
+      "usage": {
+        "promptTokens": 1525,
+        "completionTokens": 455
+      },
+      "invalidReplies": []
+    },
+    {
+      "agent": "auditor",
+      "round": 2,
+      "kind": "review",
+      "output": {
+        "message": "Round 2 audit: c1 and c5 lean on a promotional trend article, and c6 on a keynote with no data. c7 and c8 score 4/5 from evidence of five interested firms and three tickets, which is optimism, not support. w1 and w2 assume a diagnosis build the spike and survey both undermine. No unverified figures found in agent text.",
+        "challenges": [
+          {
+            "target": "c1",
+            "issue": "unsupported",
+            "note": "Trend-article figure, no method or sample; does not justify a 4/5 fit score."
+          },
+          {
+            "target": "c5",
+            "issue": "unsupported",
+            "note": "Promotional forecast; Milo himself says weight market forecasts lightly."
+          },
+          {
+            "target": "c6",
+            "issue": "unsupported",
+            "note": "Keynote gave no data sources, so this cannot support market scoring."
+          },
+          {
+            "target": "c7",
+            "issue": "optimistic",
+            "note": "Five interested and two willing to pay, mostly tiny firms; 4/5 overstates demand."
+          },
+          {
+            "target": "c8",
+            "issue": "inconsistent",
+            "note": "Same three-ticket quote scores 2/5 for Ada and 4/5 for Milo."
+          },
+          {
+            "target": "w1",
+            "issue": "optimistic",
+            "note": "Diagnosis workstream ignores unsafe answers and scarce labelled photos."
+          },
+          {
+            "target": "w2",
+            "issue": "weak",
+            "note": "Data collection costed without evidence we can obtain enough labelled photos."
+          }
+        ]
+      },
+      "usage": {
+        "promptTokens": 1980,
+        "completionTokens": 333
+      },
+      "invalidReplies": []
+    },
+    {
+      "agent": "strategy",
+      "round": 2,
+      "kind": "response",
+      "output": {
+        "message": "The Auditor is right: c1 rests on a trend article with no method, so it cannot carry a 4/5. I lower it to 2/5 and add one new claim from the customer evidence.",
+        "revisions": [
+          {
+            "claim": "c1",
+            "score": 2,
+            "reason": "Unsupported trend figure, no method or sample; weak fit evidence."
+          }
+        ],
+        "claims": [
+          {
+            "id": "c5",
+            "dimension": "fit",
+            "score": 2,
+            "source": "s5",
+            "quote": "seven were worried about wrong diagnoses on gas or electrical faults",
+            "reason": "Safety worry limits fit as a premium add-on."
+          }
+        ]
+      },
+      "usage": {
+        "promptTokens": 3252,
+        "completionTokens": 291
+      },
+      "invalidReplies": [
+        "claim 1: dimension must be one of fit"
+      ]
+    },
+    {
+      "agent": "market",
+      "round": 2,
+      "kind": "response",
+      "output": {
+        "message": "I accept the challenges. Promotional and unsourced forecasts carry little weight, and my two accepted claims were scored inconsistently. I lower c7 and c8 to reflect weak, narrow demand.",
+        "revisions": [
+          {
+            "claim": "c5",
+            "score": 1,
+            "reason": "Promotional forecast, no methodology; Milo weights such forecasts lightly."
+          },
+          {
+            "claim": "c6",
+            "score": 1,
+            "reason": "Keynote gave no data sources; cannot support market scoring."
+          },
+          {
+            "claim": "c7",
+            "score": 2,
+            "reason": "Only two of fourteen would pay, mostly tiny firms."
+          },
+          {
+            "claim": "c8",
+            "score": 2,
+            "reason": "Three tickets in 9,800 shows negligible demand, matching Ada."
+          }
+        ],
+        "claims": []
+      },
+      "usage": {
+        "promptTokens": 1603,
+        "completionTokens": 185
+      },
+      "invalidReplies": []
+    },
+    {
+      "agent": "delivery",
+      "round": 2,
+      "kind": "response",
+      "output": {
+        "message": "No challenges were raised against my claims or estimate, so I confirm all four scores and the five work packages unchanged.",
+        "revisions": [],
+        "estimates": []
+      },
+      "usage": {
+        "promptTokens": 1623,
+        "completionTokens": 38
+      },
+      "invalidReplies": []
+    },
+    {
+      "agent": "finance",
+      "round": 3,
+      "kind": "assumptions",
+      "output": {
+        "message": "Base case: cautious price and adoption, mid churn, running cost near the lower end, since evidence shows weak demand and safety concerns.",
+        "assumptions": [
+          {
+            "key": "price",
+            "value": 600,
+            "source": "s5",
+            "quote": "Respondents suggested a price between £600 and £1,500 per year.",
+            "rationale": "Cautious end; few firms would pay."
+          },
+          {
+            "key": "adoption",
+            "value": 10,
+            "source": "s9",
+            "quote": "between 10 and 60 firms a year might buy a premium AI add-on",
+            "rationale": "Cautious end; AI rarely a requirement."
+          },
+          {
+            "key": "churn",
+            "value": 25,
+            "source": "s8",
+            "quote": "churn on early AI add-ons to run between 15% and 35% a year",
+            "rationale": "Midpoint of analyst churn range."
+          },
+          {
+            "key": "running",
+            "value": 120000,
+            "source": "s7",
+            "quote": "Inference and human review would cost £120,000 to £220,000 a year.",
+            "rationale": "Lower end; limits spend given weak pull."
+          }
+        ]
+      },
+      "usage": {
+        "promptTokens": 2005,
+        "completionTokens": 267
+      },
+      "invalidReplies": []
+    },
+    {
+      "agent": "finance",
+      "round": 3,
+      "kind": "case",
+      "output": {
+        "message": "Computed results: base case NPV is minus £435,487, ROI minus 316%, payback not within 3 years. The spread runs from minus £706,380 pessimistic to minus £136,573 optimistic, a range of £569,807. Every scenario is loss-making. Running cost per year moves NPV most, so cost-to-serve control matters more than price or adoption."
+      },
+      "usage": {
+        "promptTokens": 1295,
+        "completionTokens": 85
+      },
+      "invalidReplies": []
+    },
+    {
+      "agent": "chair",
+      "round": 3,
+      "kind": "brief",
+      "output": {
+        "message": "Evidence supports a narrow report-writing need, not an autonomous expert: demand is thin, accuracy is 58% with one answer in five judged unsafe, and every scenario is loss-making. Agents still disagree on fit and market pull, though all now accept weak scores. A tier of park follows the policy. The board would change its mind if a paid pilot showed safe accuracy and real willingness to pay.",
+        "tier": "park",
+        "dissent": [
+          "Ada and Milo revised scores downward but still weigh strategic fit and market pull more generously than the financial evidence warrants."
+        ],
+        "mindChangers": [
+          "A paid pilot with safe accuracy above the current 58% and signed premium commitments would reopen the case."
+        ]
+      },
+      "usage": {
+        "promptTokens": 1541,
+        "completionTokens": 147
+      },
+      "invalidReplies": []
+    }
+  ],
+  "summary": {
+    "tier": "Park",
+    "counters": {
+      "claimsMade": 13,
+      "claimsAccepted": 10,
+      "unsupported": 3,
+      "struckFigures": 2,
+      "screenedPassages": 5
+    },
+    "metrics": {
+      "strategicFit": 45,
+      "marketPull": 40,
+      "feasibility": 50,
+      "evidenceStrength": 34,
+      "financialReturn": 0,
+      "risk": 40
+    },
+    "usage": {
+      "promptTokens": 17582,
+      "completionTokens": 2511,
+      "llmTurns": 10
+    }
+  }
+}

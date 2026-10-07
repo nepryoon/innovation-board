@@ -1,0 +1,367 @@
+{
+  "synthetic": true,
+  "note": "Recorded live board run on synthetic data. Replayed through the same citation check, figure filter and computations.",
+  "ideaId": "payment-matching",
+  "model": "deepseek-flash",
+  "recordedAt": "2026-10-07",
+  "turns": [
+    {
+      "agent": "strategy",
+      "round": 1,
+      "kind": "opening",
+      "output": {
+        "message": "The idea fits Brindlecote's stated priority of reducing cost-to-serve in finance operations, and reuses existing invoice and payment data rather than needing a new sales channel. It also supports the core platform by cutting billing errors that reach customers. Fit is strong, though benefits depend on clean payment references.",
+        "claims": [
+          {
+            "dimension": "fit",
+            "score": 5,
+            "source": "s1",
+            "quote": "Two finance assistants spent 41% of their time on payment reconciliation in the quarter.",
+            "reason": "Directly targets the cost-to-serve priority with a large measured time sink."
+          },
+          {
+            "dimension": "fit",
+            "score": 4,
+            "source": "s3",
+            "quote": "Billing questions are our second-largest ticket type.",
+            "reason": "Reduces support load, aligning with the cost-to-serve priority."
+          },
+          {
+            "dimension": "fit",
+            "score": 4,
+            "source": "s8",
+            "quote": "Neither handles our partial payments for multi-site contracts",
+            "reason": "Building internally avoids a new sales channel and packaged-tool licences."
+          },
+          {
+            "dimension": "fit",
+            "score": 3,
+            "source": "s7",
+            "quote": "benefits depend on clean payment references",
+            "reason": "Value is conditional, so fit is good but not risk-free."
+          }
+        ]
+      },
+      "usage": {
+        "promptTokens": 1305,
+        "completionTokens": 289
+      },
+      "invalidReplies": []
+    },
+    {
+      "agent": "market",
+      "round": 1,
+      "kind": "opening",
+      "output": {
+        "message": "Market pull is moderate: internal evidence shows clear pain, but external market data is thin. The benchmark note (s7) gives qualitative benefits, not market size or growth. Packaged tools (s8) fail on partial payments. Weight s7 lightly, s1-s4 heavily.",
+        "claims": [
+          {
+            "dimension": "market",
+            "score": 3,
+            "source": "s7",
+            "quote": "Mid-sized software firms that automated payment matching reported shorter month-end closes, typically by two to four days.",
+            "reason": "External benchmark supports demand but gives no market size or growth forecast."
+          },
+          {
+            "dimension": "market",
+            "score": 2,
+            "source": "s8",
+            "quote": "Neither handles our partial payments for multi-site contracts, which make up 12% of invoices, so a manual queue would remain either way.",
+            "reason": "Packaged tools are weak, limiting competitive pull for a build."
+          },
+          {
+            "dimension": "market",
+            "score": 4,
+            "source": "s1",
+            "quote": "Two finance assistants spent 41% of their time on payment reconciliation in the quarter.",
+            "reason": "Strong internal evidence of customer need and time cost."
+          }
+        ]
+      },
+      "usage": {
+        "promptTokens": 1323,
+        "completionTokens": 285
+      },
+      "invalidReplies": []
+    },
+    {
+      "agent": "delivery",
+      "round": 1,
+      "kind": "opening",
+      "output": {
+        "message": "Opening view: the matching rules engine is feasible on historic data, but bank file changes and partial payments keep delivery risk moderate. Rollout should start with direct-debit accounts. Estimates below assume the free squad of five.",
+        "claims": [
+          {
+            "dimension": "feasibility",
+            "score": 4,
+            "source": "s5",
+            "quote": "Simple rules on reference and amount matched 82% of payments automatically",
+            "reason": "Historic replay shows most payments match with simple rules."
+          },
+          {
+            "dimension": "risk",
+            "score": 2,
+            "source": "s2",
+            "quote": "The bank file format changed twice last year, which broke our macros",
+            "reason": "Bank file volatility is a real delivery risk."
+          },
+          {
+            "dimension": "risk",
+            "score": 3,
+            "source": "s8",
+            "quote": "Neither handles our partial payments for multi-site contracts",
+            "reason": "Partial payments keep a manual queue in scope."
+          }
+        ],
+        "estimates": [
+          {
+            "wp": "w1",
+            "o": 20,
+            "m": 30,
+            "p": 50
+          },
+          {
+            "wp": "w2",
+            "o": 15,
+            "m": 25,
+            "p": 40
+          },
+          {
+            "wp": "w3",
+            "o": 10,
+            "m": 18,
+            "p": 30
+          },
+          {
+            "wp": "w4",
+            "o": 12,
+            "m": 20,
+            "p": 35
+          },
+          {
+            "wp": "w5",
+            "o": 8,
+            "m": 15,
+            "p": 25
+          }
+        ]
+      },
+      "usage": {
+        "promptTokens": 1456,
+        "completionTokens": 376
+      },
+      "invalidReplies": []
+    },
+    {
+      "agent": "auditor",
+      "round": 2,
+      "kind": "review",
+      "output": {
+        "message": "Audit flags optimism and misapplied evidence. c2, c3 and c6 cite sources that do not support their scores; market scores lean on internal logs and a competitor review, not market data. c1 and c7 double-count the same time log. s7 warns savings are often redeployed, not banked, and s5's annual running cost is absent from the estimate. The estimate omits the £15,000 to £30,000 yearly running cost.",
+        "challenges": [
+          {
+            "target": "c2",
+            "issue": "unsupported",
+            "note": "s3 gives ticket ranking and a hedged guess, not a scored fit or size."
+          },
+          {
+            "target": "c3",
+            "issue": "unsupported",
+            "note": "s8 is a competitor review; it does not evidence Brindlecote fit at 4/5."
+          },
+          {
+            "target": "c5",
+            "issue": "weak",
+            "note": "Quote is truncated and s7 is qualitative; no market size or growth."
+          },
+          {
+            "target": "c7",
+            "issue": "inconsistent",
+            "note": "Same s1 time log already scored as c1 fit; double-counted."
+          },
+          {
+            "target": "c6",
+            "issue": "optimistic",
+            "note": "s8 shows partial payments keep a manual queue, so 2/5 may overstate."
+          },
+          {
+            "target": "w1",
+            "issue": "unverified",
+            "note": "Estimate excludes s5's stated annual running cost and s9 training days."
+          }
+        ]
+      },
+      "usage": {
+        "promptTokens": 1829,
+        "completionTokens": 327
+      },
+      "invalidReplies": []
+    },
+    {
+      "agent": "strategy",
+      "round": 2,
+      "kind": "response",
+      "output": {
+        "message": "Both challenges stand. s3 is a hedged ranking, not fit evidence; s8 shows a gap competitors miss, which supports fit only weakly. c1 and c4 unchanged.",
+        "revisions": [
+          {
+            "claim": "c2",
+            "score": 2,
+            "reason": "s3 hedges and gives no fit or size evidence; only a ticket ranking."
+          },
+          {
+            "claim": "c3",
+            "score": 3,
+            "reason": "s8 evidences a competitor gap, not Brindlecote strategic fit directly."
+          }
+        ],
+        "claims": []
+      },
+      "usage": {
+        "promptTokens": 1478,
+        "completionTokens": 121
+      },
+      "invalidReplies": []
+    },
+    {
+      "agent": "market",
+      "round": 2,
+      "kind": "response",
+      "output": {
+        "message": "Accept c5 and c7 challenges; c5's truncated qualitative quote cannot support 3/5, and c7 double-counts s1 already used for c1. c6 stands: s8's manual queue is a real drag, not optimism.",
+        "revisions": [
+          {
+            "claim": "c5",
+            "score": 2,
+            "reason": "Qualitative benchmark only, no market size or growth; quote truncated"
+          },
+          {
+            "claim": "c7",
+            "score": 3,
+            "reason": "Double-counts s1 time log already scored under c1 fit"
+          }
+        ],
+        "claims": []
+      },
+      "usage": {
+        "promptTokens": 1491,
+        "completionTokens": 129
+      },
+      "invalidReplies": []
+    },
+    {
+      "agent": "delivery",
+      "round": 2,
+      "kind": "response",
+      "output": {
+        "message": "No challenges were raised to my claims or estimate, so nothing changes. I confirm c8 at 4, c9 at 2 and c10 at 3, and the person-days for w1 to w5 as they stand.",
+        "revisions": [],
+        "estimates": []
+      },
+      "usage": {
+        "promptTokens": 1516,
+        "completionTokens": 64
+      },
+      "invalidReplies": []
+    },
+    {
+      "agent": "finance",
+      "round": 3,
+      "kind": "assumptions",
+      "output": {
+        "message": "Base case sits mid-range: modest per-account saving, steady adoption, cautious churn and running cost. No new revenue, so the case rests on time saved and fewer billing errors.",
+        "assumptions": [
+          {
+            "key": "price",
+            "value": 145,
+            "source": "s1",
+            "quote": "the saving at £110 to £180 per account per year",
+            "rationale": "Midpoint of finance estimate, avoids overstating benefit"
+          },
+          {
+            "key": "adoption",
+            "value": 325,
+            "source": "s6",
+            "quote": "moving 250 to 400 accounts a year onto automatic matching",
+            "rationale": "Middle of finance roll-out plan"
+          },
+          {
+            "key": "churn",
+            "value": 10,
+            "source": "s6",
+            "quote": "5% to 15% of moved accounts to fall back to manual matching",
+            "rationale": "Midpoint fallback rate each year"
+          },
+          {
+            "key": "running",
+            "value": 22500,
+            "source": "s5",
+            "quote": "Running cost would be £15,000 to £30,000 a year",
+            "rationale": "Midpoint of spike estimate"
+          }
+        ]
+      },
+      "usage": {
+        "promptTokens": 1823,
+        "completionTokens": 255
+      },
+      "invalidReplies": []
+    },
+    {
+      "agent": "finance",
+      "round": 3,
+      "kind": "case",
+      "output": {
+        "message": "Base case: NPV £36,581, ROI 99%, payback 26.8 months. The spread runs from NPV £-57,638 and ROI -68% pessimistic to NPV £152,757 and ROI 348% optimistic. Saving per account per year moves the result most: base-case NPV is zero at £112."
+      },
+      "usage": {
+        "promptTokens": 1208,
+        "completionTokens": 74
+      },
+      "invalidReplies": []
+    },
+    {
+      "agent": "chair",
+      "round": 3,
+      "kind": "brief",
+      "output": {
+        "message": "The evidence supports a modest internal efficiency case: two finance assistants spend 41% of their time on reconciliation, and simple rules matched 82% of payments automatically. Base case NPV £36,581, ROI 99%, payback 26.8 months, but pessimistic NPV is £-57,638. Agents disagree on market pull and the partial-payment gap. A shadow run for £6,820 over 5 weeks would test matching rates before commitment. Policy indicates a pilot.",
+        "tier": "pilot",
+        "dissent": [
+          "Milo rates market pull low, citing the 12% partial-payment gap; Ada and Dara see fit and feasibility stronger."
+        ],
+        "mindChangers": [
+          "Shadow run showing above 82% automatic matching and clean references; or saving per account above £112."
+        ]
+      },
+      "usage": {
+        "promptTokens": 1471,
+        "completionTokens": 172
+      },
+      "invalidReplies": []
+    }
+  ],
+  "summary": {
+    "tier": "Run a pilot",
+    "counters": {
+      "claimsMade": 10,
+      "claimsAccepted": 10,
+      "unsupported": 0,
+      "struckFigures": 0,
+      "screenedPassages": 0
+    },
+    "metrics": {
+      "strategicFit": 65,
+      "marketPull": 47,
+      "feasibility": 80,
+      "evidenceStrength": 60,
+      "financialReturn": 70,
+      "risk": 50
+    },
+    "usage": {
+      "promptTokens": 14900,
+      "completionTokens": 2092,
+      "llmTurns": 10
+    }
+  }
+}

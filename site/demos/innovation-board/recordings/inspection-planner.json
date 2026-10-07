@@ -1,0 +1,401 @@
+{
+  "synthetic": true,
+  "note": "Recorded live board run on synthetic data. Replayed through the same citation check, figure filter and computations.",
+  "ideaId": "inspection-planner",
+  "model": "deepseek-flash",
+  "recordedAt": "2026-10-07",
+  "turns": [
+    {
+      "agent": "strategy",
+      "round": 1,
+      "kind": "opening",
+      "output": {
+        "message": "Inspection Planner fits Brindlecote's priorities well: it is an add-on to Brindle Dispatch sold to existing customers, addressing a gap named in lost deals and a frequent support theme. Capability fit is good, though spreadsheet migration and running cost need care.",
+        "claims": [
+          {
+            "dimension": "fit",
+            "score": 5,
+            "source": "s1",
+            "quote": "In 61 of them the prospect named inspection tracking as a gap",
+            "reason": "Directly addresses lost-deal gap, sold as add-on to existing customers."
+          },
+          {
+            "dimension": "fit",
+            "score": 4,
+            "source": "s2",
+            "quote": "1,240 asked how to schedule recurring inspections or attach certificates to jobs",
+            "reason": "Reduces support cost-to-serve, matching a stated company priority."
+          },
+          {
+            "dimension": "fit",
+            "score": 4,
+            "source": "s5",
+            "quote": "58% of respondents manage statutory inspections for their clients",
+            "reason": "Large share of existing base has the need, supporting add-on growth."
+          },
+          {
+            "dimension": "fit",
+            "score": 3,
+            "source": "s9",
+            "quote": "Migrating customers' spreadsheets did not, because site names rarely match our records",
+            "reason": "Data migration risk; squad capacity is limited to one team."
+          }
+        ]
+      },
+      "usage": {
+        "promptTokens": 1372,
+        "completionTokens": 292
+      },
+      "invalidReplies": []
+    },
+    {
+      "agent": "market",
+      "round": 1,
+      "kind": "opening",
+      "output": {
+        "message": "Market pull is strong: statutory inspection gaps appear in 61 lost deals, 1,240 support tickets and 58% of surveyed firms. The £140m UK segment is soft evidence. Adoption forecasts of 80 to 160 firms yearly are credible but carry churn risk. I score market 4.",
+        "claims": [
+          {
+            "dimension": "market",
+            "score": 5,
+            "source": "s1",
+            "quote": "In 61 of them the prospect named inspection tracking as a gap",
+            "reason": "Lost-deal evidence shows real buying demand for inspection tracking."
+          },
+          {
+            "dimension": "market",
+            "score": 4,
+            "source": "s5",
+            "quote": "41% rated a built-in inspection planner as their most wanted feature",
+            "reason": "Survey of 212 firms shows strong preference, though stated intent may overstate."
+          },
+          {
+            "dimension": "market",
+            "score": 3,
+            "source": "s7",
+            "quote": "The report sizes the UK segment at £140m",
+            "reason": "Large segment, but vendor-reported data may double-count bundled products."
+          },
+          {
+            "dimension": "market",
+            "score": 4,
+            "source": "s6",
+            "quote": "They expect 80 to 160 customer firms to adopt in each of the first three years",
+            "reason": "Plausible forecast from customer success, with 5% to 10% annual churn."
+          }
+        ]
+      },
+      "usage": {
+        "promptTokens": 1390,
+        "completionTokens": 344
+      },
+      "invalidReplies": []
+    },
+    {
+      "agent": "delivery",
+      "round": 1,
+      "kind": "opening",
+      "output": {
+        "message": "The spike proves the rules engine works on our job model, so core feasibility is sound. The real delivery risk sits in migrating messy customer spreadsheets, where site names rarely match our records. Demand signals are strong but mixed on willingness to pay. I have set effort ranges per work package, with migration and integration carrying the widest uncertainty.",
+        "claims": [
+          {
+            "dimension": "feasibility",
+            "score": 4,
+            "source": "s9",
+            "quote": "A short spike built a rules engine for 12 inspection types on the existing job model.",
+            "reason": "Core scheduling engine already demonstrated on existing model."
+          },
+          {
+            "dimension": "feasibility",
+            "score": 3,
+            "source": "s3",
+            "quote": "provided it reads our existing site list",
+            "reason": "Feasibility depends on matching customer site records."
+          },
+          {
+            "dimension": "risk",
+            "score": 2,
+            "source": "s9",
+            "quote": "Migrating customers' spreadsheets did not, because site names rarely match our records.",
+            "reason": "Data migration is the main delivery risk."
+          },
+          {
+            "dimension": "risk",
+            "score": 4,
+            "source": "s8",
+            "quote": "Neither integrates with a technician app, which is where certificates are actually captured.",
+            "reason": "Rivals weak on certificate capture, lowering competitive risk."
+          }
+        ],
+        "estimates": [
+          {
+            "wp": "w1",
+            "o": 25,
+            "m": 40,
+            "p": 60
+          },
+          {
+            "wp": "w2",
+            "o": 20,
+            "m": 30,
+            "p": 45
+          },
+          {
+            "wp": "w3",
+            "o": 30,
+            "m": 55,
+            "p": 90
+          },
+          {
+            "wp": "w4",
+            "o": 15,
+            "m": 25,
+            "p": 40
+          },
+          {
+            "wp": "w5",
+            "o": 15,
+            "m": 25,
+            "p": 40
+          }
+        ]
+      },
+      "usage": {
+        "promptTokens": 1525,
+        "completionTokens": 468
+      },
+      "invalidReplies": []
+    },
+    {
+      "agent": "auditor",
+      "round": 2,
+      "kind": "review",
+      "output": {
+        "message": "Optimism runs ahead of the evidence. c1 and c5 reuse one lost-deal figure as both fit and market proof. c8 rests on an internal forecast, not customer commitment. c7's own source warns the sizing may double-count. c4 and c11 quote the same migration failure, so risk is understated, not double-counted as strength.",
+        "challenges": [
+          {
+            "target": "c1",
+            "issue": "optimistic",
+            "note": "Lost deals show a gap, not willingness to pay; no pricing evidence cited."
+          },
+          {
+            "target": "c5",
+            "issue": "inconsistent",
+            "note": "Same s1 quote scored for fit and market; one source cannot carry both."
+          },
+          {
+            "target": "c8",
+            "issue": "weak",
+            "note": "Internal customer-success forecast, not customer commitment; two accounts asked only for a date."
+          },
+          {
+            "target": "c7",
+            "issue": "weak",
+            "note": "Source itself warns vendor-reported revenue may double-count bundled products."
+          },
+          {
+            "target": "c4",
+            "issue": "inconsistent",
+            "note": "Same migration failure quoted as fit and as risk; evidence is negative, not enabling."
+          },
+          {
+            "target": "w3",
+            "issue": "optimistic",
+            "note": "Spike failed on spreadsheet migration; w3 range may understate rework."
+          },
+          {
+            "target": "c3",
+            "issue": "unsupported",
+            "note": "Managing inspections does not imply wanting or buying an add-on."
+          }
+        ]
+      },
+      "usage": {
+        "promptTokens": 1965,
+        "completionTokens": 321
+      },
+      "invalidReplies": []
+    },
+    {
+      "agent": "strategy",
+      "round": 2,
+      "kind": "response",
+      "output": {
+        "message": "Both challenges are fair. Lost deals prove a gap, not willingness to pay, so c1 drops. c4's quote is a negative finding, so fit falls; the rules engine is the enabling part.",
+        "revisions": [
+          {
+            "claim": "c1",
+            "score": 4,
+            "reason": "Gap evidence, but pricing only estimated and no willingness-to-pay proof"
+          },
+          {
+            "claim": "c4",
+            "score": 2,
+            "reason": "Migration failure is a negative finding, not evidence of strategic fit"
+          }
+        ],
+        "claims": [
+          {
+            "claim": "c5",
+            "dimension": "fit",
+            "score": 4,
+            "source": "s9",
+            "quote": "Recurrence and certificate expiry worked well"
+          }
+        ]
+      },
+      "usage": {
+        "promptTokens": 3278,
+        "completionTokens": 315
+      },
+      "invalidReplies": [
+        "claim 1: dimension must be one of fit"
+      ]
+    },
+    {
+      "agent": "market",
+      "round": 2,
+      "kind": "response",
+      "output": {
+        "message": "I accept c5 and c8 should drop: s1's lost-deal gap also supports fit, and s6 is an internal forecast, not commitment. c7 stays at 3, since the £140m is directionally useful despite the double-counting caveat. c6's strike stands; I add nothing new.",
+        "revisions": [
+          {
+            "claim": "c5",
+            "score": 3,
+            "reason": "Same s1 quote already carries fit; one source cannot support both dimensions."
+          },
+          {
+            "claim": "c8",
+            "score": 2,
+            "reason": "Internal forecast, not customer commitment; only two accounts asked for a date."
+          },
+          {
+            "claim": "c7",
+            "score": 3,
+            "reason": "Source warns vendor-reported revenue may double-count bundled products, so confidence stays moderate."
+          }
+        ],
+        "claims": []
+      },
+      "usage": {
+        "promptTokens": 1566,
+        "completionTokens": 182
+      },
+      "invalidReplies": []
+    },
+    {
+      "agent": "delivery",
+      "round": 2,
+      "kind": "response",
+      "output": {
+        "message": "No challenges were raised against my claims or estimate, so I confirm them as they stand. Scores c9 to c12 and all work package effort ranges remain unchanged.",
+        "revisions": [],
+        "estimates": []
+      },
+      "usage": {
+        "promptTokens": 1621,
+        "completionTokens": 48
+      },
+      "invalidReplies": []
+    },
+    {
+      "agent": "finance",
+      "round": 3,
+      "kind": "assumptions",
+      "output": {
+        "message": "Base case sits mid-range on price and adoption, cautious on churn and running cost, given the spreadsheet-migration risk and mixed willingness to pay.",
+        "assumptions": [
+          {
+            "key": "price",
+            "value": 1950,
+            "source": "s1",
+            "quote": "an add-on priced between £1,500 and £2,400 per year",
+            "rationale": "Midpoint of account managers' accepted range."
+          },
+          {
+            "key": "adoption",
+            "value": 120,
+            "source": "s6",
+            "quote": "80 to 160 customer firms to adopt in each of the first three years",
+            "rationale": "Midpoint of customer success forecast."
+          },
+          {
+            "key": "churn",
+            "value": 10,
+            "source": "s6",
+            "quote": "Comparable add-ons lost between 5% and 10% of subscribers a year",
+            "rationale": "Cautious end, unproven add-on."
+          },
+          {
+            "key": "running",
+            "value": 80000,
+            "source": "s9",
+            "quote": "Running cost is estimated at £50,000 to £80,000 a year",
+            "rationale": "Cautious end, support heavy."
+          }
+        ]
+      },
+      "usage": {
+        "promptTokens": 1974,
+        "completionTokens": 264
+      },
+      "invalidReplies": []
+    },
+    {
+      "agent": "finance",
+      "round": 3,
+      "kind": "case",
+      "output": {
+        "message": "Base case gives NPV £487,190, ROI 614% and payback 15.2 months. The spread runs from NPV £90,728 at 26.6 months in the pessimistic case to £1,115,809 at 8.1 months optimistic. New customer firms per year moves the result most: base-case NPV is zero at 46 a year."
+      },
+      "usage": {
+        "promptTokens": 1294,
+        "completionTokens": 82
+      },
+      "invalidReplies": []
+    },
+    {
+      "agent": "chair",
+      "round": 3,
+      "kind": "brief",
+      "output": {
+        "message": "Evidence supports a real gap: inspection tracking recurs in lost deals and support requests, and the rules engine works on the existing job model. Feasibility is sound, but willingness to pay is unproven and spreadsheet migration is messy. Financials clear the policy bar, so invest now is defensible; I would still pilot to buy proof. Agents disagree on market size and adoption, not on the build.",
+        "tier": "pilot",
+        "dissent": [
+          "Milo keeps market at 3 despite double-counted sizing; Fen's base case rests on an internal adoption forecast, not commitment."
+        ],
+        "mindChangers": [
+          "Pre-order page converting 300 firms into paid commitments; a paying pilot cohort above 46 firms a year."
+        ]
+      },
+      "usage": {
+        "promptTokens": 1567,
+        "completionTokens": 156
+      },
+      "invalidReplies": []
+    }
+  ],
+  "summary": {
+    "tier": "Invest now",
+    "counters": {
+      "claimsMade": 13,
+      "claimsAccepted": 12,
+      "unsupported": 0,
+      "struckFigures": 1,
+      "screenedPassages": 0
+    },
+    "metrics": {
+      "strategicFit": 72,
+      "marketPull": 53,
+      "feasibility": 70,
+      "evidenceStrength": 60,
+      "financialReturn": 100,
+      "risk": 60
+    },
+    "usage": {
+      "promptTokens": 17552,
+      "completionTokens": 2472,
+      "llmTurns": 10
+    }
+  }
+}
