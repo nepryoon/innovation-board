@@ -2,6 +2,7 @@
 // The prompts ask the agents to behave; these functions make sure they did.
 
 import { SOURCE_TYPES } from "./data.js";
+import { messages } from "./messages.js";
 
 const MIN_QUOTE_CHARS = 12;
 const MAX_QUOTE_CHARS = 260;
@@ -28,13 +29,14 @@ export function splitSentences(text) {
   return String(text ?? "")
     .replace(/\s+/g, " ")
     .trim()
-    .split(/(?<=[.!?])\s+(?=[A-Z0-9"'“‘(£€$])/)
+    .split(/(?<=[.!?])\s+(?=[A-Z0-9"'“‘(£€$À-Ý])/)
     .filter(Boolean);
 }
 
 // --- Figures ------------------------------------------------------------------------------
 // A figure is a number with a unit: currency, percentage, market size, users or customers, or time.
-// Each is reduced to { kind, value } so that "£1.2m" and "£1,200,000" compare as equal.
+// Each is reduced to { kind, value } so that "£1.2m" and "£1,200,000" compare as equal. Each locale
+// has its own number format and unit words; the rounding rules are the same for all of them.
 
 const SCALE = { k: 1e3, thousand: 1e3, m: 1e6, million: 1e6, bn: 1e9, billion: 1e9 };
 const COUNT_UNITS = "users|customers|customer firms|firms|companies|clients|accounts|subscribers|businesses|contractors|technicians|seats|sites|tickets|prospects|deals|installations";
@@ -49,24 +51,67 @@ const PATTERNS = [
   { kind: "money", re: new RegExp(`(${NUM})\\s?(bn|billion|million)\\b`, "gi") }
 ];
 
-const toNumber = (raw) => Number(String(raw).replace(/,/g, ""));
+// Italian: thousands dot and decimal comma (1.240; 12,5), "mila", "mln", "milioni", "mld", "miliardi",
+// the euro sign before or after the number, "per cento", and time in giorni, giornate, settimane,
+// mesi, anni. JavaScript's \\b does not see accented letters, so the end of a word is a lookahead.
+const END = "(?![A-Za-zÀ-ÿ])";
+const SCALE_IT = { k: 1e3, mila: 1e3, mln: 1e6, milione: 1e6, milioni: 1e6, mld: 1e9, miliardo: 1e9, miliardi: 1e9 };
+const SCALE_WORDS_IT = "k|mila|mln|milioni|milione|mld|miliardi|miliardo";
+const COUNT_UNITS_IT = "utenti|aziende clienti|aziende|imprese|clienti|potenziali clienti|conti|account|abbonati|tecnici|postazioni|siti|sedi|ticket|trattative|installazioni";
+const TIME_WORDS_IT = "giorni lavorativi|giornate lavorative|giorni[- ]persona|giornate[- ]persona|giorno lavorativo|giornata lavorativa|giorni|giorno|giornate|giornata|minuti|minuto|ore|ora|settimane|settimana|mesi|mese|trimestri|trimestre|anni|anno";
+const NUM_IT = "\\d{1,3}(?:\\.\\d{3})+(?:,\\d+)?|\\d+(?:,\\d+)?";
 
-export function extractFigures(text) {
+function timeDaysIt(word) {
+  const w = word.toLowerCase();
+  if (w.startsWith("minut")) return 1 / 480;
+  if (w === "ore" || w === "ora") return 1 / 8;
+  if (w.startsWith("settiman")) return 7;
+  if (w.startsWith("mes")) return 30.4;
+  if (w.startsWith("trimestr")) return 91.3;
+  if (w.startsWith("ann")) return 365;
+  return 1;
+}
+
+const PATTERNS_IT = [
+  { kind: "money", re: new RegExp(`[£€$]\\s?(${NUM_IT})\\s?(${SCALE_WORDS_IT})?${END}`, "gi") },
+  { kind: "money", re: new RegExp(`(${NUM_IT})\\s?(${SCALE_WORDS_IT})?\\s?(?:di\\s)?(?:€|euro${END}|sterline${END}|dollari${END})`, "gi") },
+  { kind: "percent", re: new RegExp(`(${NUM_IT})\\s?(?:%|per\\s?cento${END}|punti percentuali${END}|punti${END}|punto percentuale${END})`, "gi") },
+  { kind: "count", re: new RegExp(`(${NUM_IT})\\s?(mila|milioni|milione)?\\s(?:di\\s)?(?:(?:nuovi|nuove|altri|altre|attivi|attive|paganti)\\s)?(${COUNT_UNITS_IT})${END}`, "gi") },
+  { kind: "time", re: new RegExp(`(${NUM_IT})[\\s-]?(${TIME_WORDS_IT})${END}`, "gi") },
+  { kind: "money", re: new RegExp(`(${NUM_IT})\\s?(miliardi|miliardo|milioni|milione|mld|mln)${END}`, "gi") }
+];
+
+const FORMATS = {
+  en: { patterns: PATTERNS, number: (raw) => Number(String(raw).replace(/,/g, "")), decimals: (raw) => (raw.split(".")[1] || "").length,
+    scale: (unit) => SCALE[unit] || 1, days: (unit) => TIME_DAYS[unit.replace(/s$/, "")] ?? 1, bare: /\d{1,3}(?:,\d{3})+|\d+/g },
+  it: { patterns: PATTERNS_IT, number: (raw) => Number(String(raw).replace(/\./g, "").replace(",", ".")), decimals: (raw) => (raw.split(",")[1] || "").length,
+    scale: (unit) => SCALE_IT[unit] || 1, days: timeDaysIt, bare: /\d{1,3}(?:\.\d{3})+|\d+/g }
+};
+const formatFor = (locale) => FORMATS[locale] || FORMATS.en;
+
+// Bare numbers in a text, in the locale's format ("Of 9,800 tickets, 1,240 asked…").
+export function bareNumbers(text, locale = "en") {
+  const f = formatFor(locale);
+  return [...String(text ?? "").matchAll(f.bare)].map((m) => f.number(m[0]));
+}
+
+export function extractFigures(text, locale = "en") {
   const value = String(text ?? "");
+  const format = formatFor(locale);
   const found = [];
   const taken = [];
-  for (const { kind, re } of PATTERNS) {
+  for (const { kind, re } of format.patterns) {
     for (const m of value.matchAll(re)) {
       const start = m.index;
       const end = start + m[0].length;
       if (taken.some(([a, b]) => start < b && end > a)) continue;
-      let n = toNumber(m[1]);
+      let n = format.number(m[1]);
       if (!Number.isFinite(n)) continue;
       // Half of the last written digit, in the figure's unit: "£0.4m" may stand for £350,000 to £450,000.
-      let step = 0.5 * 10 ** -((m[1].split(".")[1] || "").length);
+      let step = 0.5 * 10 ** -format.decimals(m[1]);
       let scale = 1;
-      if (kind === "money" || kind === "count") scale = SCALE[(m[2] || "").toLowerCase()] || 1;
-      if (kind === "time") scale = TIME_DAYS[m[2].toLowerCase().replace(/s$/, "")] ?? 1;
+      if (kind === "money" || kind === "count") scale = format.scale((m[2] || "").toLowerCase());
+      if (kind === "time") scale = format.days(m[2].toLowerCase());
       if ((kind === "money" || kind === "count") && scale === 1) step = 0;
       n *= scale;
       taken.push([start, end]);
@@ -87,22 +132,22 @@ export function figureMatches(figure, allowed) {
   });
 }
 
-export function figuresIn(texts) {
-  return texts.flatMap((t) => extractFigures(t));
+export function figuresIn(texts, locale = "en") {
+  return texts.flatMap((t) => extractFigures(t, locale));
 }
 
 // Strikes any sentence holding a figure that is neither in a source that passed the screen nor
 // computed by code in this run (allowed is a list of { kind, value }).
-export function checkFigures(sentences, allowed) {
+export function checkFigures(sentences, allowed, locale = "en") {
   return sentences.map((s) => {
     if (s.struck) return s;
-    const wrong = extractFigures(s.text).find((f) => !figureMatches(f, allowed));
-    return wrong ? { ...s, struck: `Unverified figure: “${wrong.text}” is not in a cited source or computed by code`, figure: wrong.text } : s;
+    const wrong = extractFigures(s.text, locale).find((f) => !figureMatches(f, allowed));
+    return wrong ? { ...s, struck: messages(locale).unverified(wrong.text), figure: wrong.text } : s;
   });
 }
 
-export function screenStatement(text, allowed) {
-  return checkFigures(splitSentences(text).map((t) => ({ text: t, struck: null })), allowed);
+export function screenStatement(text, allowed, locale = "en") {
+  return checkFigures(splitSentences(text).map((t) => ({ text: t, struck: null })), allowed, locale);
 }
 
 // --- Source screen ------------------------------------------------------------------------
@@ -110,16 +155,16 @@ export function screenStatement(text, allowed) {
 // vendor blog, keynote) that states a figure gives no method or primary data, so it is struck as an
 // unverified figure: quoting it does not support a claim and its figures do not count as evidence.
 
-export function screenSources(sources) {
+export function screenSources(sources, locale = "en") {
   const passages = [];
   const clean = {};
   for (const source of sources) {
     const promotional = SOURCE_TYPES[source.type]?.grade === "promotional";
     const kept = [];
     for (const sentence of splitSentences(source.text)) {
-      const figures = extractFigures(sentence);
+      const figures = extractFigures(sentence, locale);
       if (promotional && figures.length) {
-        passages.push({ source: source.id, title: source.title, text: sentence, struck: `Unverified figure: “${figures[0].text}” comes from a promotional source with no method or primary data` });
+        passages.push({ source: source.id, title: source.title, text: sentence, struck: messages(locale).unverifiedPromo(figures[0].text) });
       } else kept.push(sentence);
     }
     clean[source.id] = kept.join(" ");
@@ -131,18 +176,20 @@ export function screenSources(sources) {
 
 // The quote must appear in the named source (case and whitespace normalised) and must not come from a
 // passage the source screen struck.
-export function checkCitation(quote, sources, sourceId, screen) {
+// The sources must be those of the run's locale: an Italian quote is checked against the Italian pack.
+export function checkCitation(quote, sources, sourceId, screen, locale = "en") {
+  const msg = messages(locale);
   const needle = trimQuote(quote);
-  if (needle.length < MIN_QUOTE_CHARS) return { ok: false, reason: "Quote too short to verify." };
-  if (needle.length > MAX_QUOTE_CHARS) return { ok: false, reason: "Quote too long: cite one passage." };
+  if (needle.length < MIN_QUOTE_CHARS) return { ok: false, reason: msg.quoteShort() };
+  if (needle.length > MAX_QUOTE_CHARS) return { ok: false, reason: msg.quoteLong() };
   const source = sources.find((s) => s.id === sourceId);
-  if (!source) return { ok: false, reason: `Unknown source ${String(sourceId).slice(0, 12)}.` };
+  if (!source) return { ok: false, reason: msg.unknownSource(String(sourceId).slice(0, 12)) };
   if (!normalise(source.text).includes(needle)) {
     const elsewhere = sources.find((s) => normalise(s.text).includes(needle));
-    return { ok: false, reason: elsewhere ? `Quote is from ${elsewhere.id}, not the cited ${source.id}.` : `Quote not found in ${source.id}.` };
+    return { ok: false, reason: elsewhere ? msg.quoteElsewhere(elsewhere.id, source.id) : msg.quoteMissing(source.id) };
   }
   if (screen && !normalise(screen.clean[source.id]).includes(needle)) {
-    return { ok: false, reason: `Quote comes from a passage of ${source.id} struck by the source screen.` };
+    return { ok: false, reason: msg.quoteScreened(source.id) };
   }
   return { ok: true, source: source.id };
 }

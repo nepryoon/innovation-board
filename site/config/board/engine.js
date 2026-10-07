@@ -1,8 +1,10 @@
 // Turn engine: asks one agent for one turn (live LLM or recorded transcript), validates the reply,
 // applies the guardrails and recomputes every number. Live and recorded turns run through the same code.
 
-import { COMPANY, POLICY, IDEAS, DIMENSIONS, ASSUMPTION_KEYS, dimensionsFor, sourceIds, experimentCost } from "./data.js";
-import { checkCitation, screenSources, screenStatement, checkFigures, extractFigures, figureMatches, splitSentences } from "./guardrails.js";
+import { POLICY, IDEAS, ASSUMPTION_KEYS, dimensionsFor, sourceIds, experimentCost } from "./data.js";
+import { localeData, ideaFor, money } from "./locale.js";
+import { messages } from "./messages.js";
+import { checkCitation, screenSources, screenStatement, checkFigures, extractFigures, figureMatches, splitSentences, bareNumbers } from "./guardrails.js";
 import { computeMetrics, auditCounters, computeEstimate, computeFinance, decideTier, nextExperiment, findDissent, rangeError } from "./scoring.js";
 import { TURN_ORDER, MAX_TURNS, MAX_CLAIMS, ISSUES, TIER_IDS, turnAt, initialState, signState } from "./protocol.js";
 import { callLlm, systemPrompt, userPrompt, resolveModel, parseJson, MAX_TOKENS } from "./llm.js";
@@ -11,8 +13,10 @@ const LIMITS = { openingClaims: 4, newClaims: 1, revisions: 4, challenges: 5, di
 
 const isObj = (v) => v !== null && typeof v === "object" && !Array.isArray(v);
 const text = (v, max) => (typeof v === "string" ? v.trim().slice(0, max) : "");
-const asNumber = (v) => {
-  const n = typeof v === "string" ? Number(v.replace(/[£,%\s]/g, "")) : v;
+// Numbers sent as strings are read in the run's locale: "1,950" in English, "1.950" in Italian.
+const asNumber = (v, locale = "en") => {
+  const clean = (s) => (locale === "it" ? s.replace(/[€£%\s.]/g, "").replace(",", ".") : s.replace(/[£,%\s]/g, ""));
+  const n = typeof v === "string" ? Number(clean(v)) : v;
   return Number.isFinite(n) ? n : null;
 };
 const asScore = (v) => {
@@ -20,10 +24,12 @@ const asScore = (v) => {
   return Number.isInteger(n) && n >= 1 && n <= 5 ? n : null;
 };
 
+// The source screen runs on the evidence pack of the run's locale.
 const screens = new Map();
-export function sourceScreen(ideaId) {
-  if (!screens.has(ideaId)) screens.set(ideaId, screenSources(IDEAS[ideaId].sources));
-  return screens.get(ideaId);
+export function sourceScreen(ideaId, locale = "en") {
+  const key = `${locale}:${ideaId}`;
+  if (!screens.has(key)) screens.set(key, screenSources(ideaFor(ideaId, locale).sources, locale));
+  return screens.get(key);
 }
 
 // --- Structural validation of one agent reply -------------------------------------------------
@@ -52,7 +58,7 @@ function validateEstimates(list, state, requireAll, errors) {
   const out = [];
   for (const [i, e] of list.slice(0, packages.length).entries()) {
     if (!isObj(e) || !packages.includes(e.wp) || seen.has(e.wp)) { errors.push(`estimate ${i + 1}: wp must be one of ${packages.join(", ")}, once each`); continue; }
-    const value = { o: asNumber(e.o), m: asNumber(e.m), p: asNumber(e.p) };
+    const value = { o: asNumber(e.o, state.locale), m: asNumber(e.m, state.locale), p: asNumber(e.p, state.locale) };
     const problem = rangeError(value);
     if (problem) { errors.push(`estimate ${e.wp}: ${problem}`); continue; }
     seen.add(e.wp);
@@ -98,7 +104,7 @@ export function validateOutput(turn, output, state) {
     value.assumptions = {};
     for (const a of list) {
       if (!isObj(a) || !ASSUMPTION_KEYS.includes(a.key) || value.assumptions[a.key]) continue;
-      const v = asNumber(a.value);
+      const v = asNumber(a.value, state.locale);
       if (v === null) { errors.push(`assumption ${a.key}: value must be a number`); continue; }
       value.assumptions[a.key] = { value: v, source: typeof a.source === "string" ? a.source.slice(0, 8) : null, quote: text(a.quote, 300), rationale: text(a.rationale, 300) };
     }
@@ -117,27 +123,29 @@ export function validateOutput(turn, output, state) {
 // --- Derived values: everything code computes from the state ----------------------------------
 
 export function derive(state) {
-  const estimate = state.estimates ? computeEstimate(state.ideaId, state.estimates) : null;
+  const locale = state.locale;
+  const estimate = state.estimates ? computeEstimate(state.ideaId, state.estimates, locale) : null;
   const base = state.assumptions ? Object.fromEntries(ASSUMPTION_KEYS.map((k) => [k, state.assumptions[k].value])) : null;
-  const finance = estimate && base ? computeFinance(state.ideaId, base, estimate) : null;
+  const finance = estimate && base ? computeFinance(state.ideaId, base, estimate, locale) : null;
   const metrics = computeMetrics(state.ideaId, state.claims, finance);
-  const tier = finance ? decideTier(metrics, finance, state.chairSuggestion) : null;
-  const experiment = finance ? nextExperiment(state.ideaId, finance.top.key) : null;
+  const tier = finance ? decideTier(metrics, finance, state.chairSuggestion, locale) : null;
+  const experiment = finance ? nextExperiment(state.ideaId, finance.top.key, locale) : null;
   return { metrics, estimate, finance, tier, experiment };
 }
 
 // Figures an agent may state: those in source passages that passed the screen, the company profile and
 // policy, the evidence ranges, and every value code computed in this run.
 export function allowedFigures(state, derived) {
-  const idea = IDEAS[state.ideaId];
-  const screen = sourceScreen(state.ideaId);
+  const locale = state.locale;
+  const idea = ideaFor(state.ideaId, locale);
+  const screen = sourceScreen(state.ideaId, locale);
   const sourceText = [...Object.values(screen.clean), ...idea.sources.map((s) => s.title), ...idea.experiments.map((x) => x.label)].join(" ");
-  const list = extractFigures(sourceText);
+  const list = extractFigures(sourceText, locale);
   const add = (kind, ...values) => values.forEach((value) => Number.isFinite(value) && list.push({ kind, value }));
   // A source often states the unit once ("Of 9,800 tickets, 1,240 asked…"), so its bare numbers back counts.
-  add("count", ...[...sourceText.matchAll(/\d{1,3}(?:,\d{3})+|\d+/g)].map((m) => Number(m[0].replace(/,/g, ""))));
-  const c = COMPANY;
-  list.push(...extractFigures(`${c.size}. ${c.capacity}`));
+  add("count", ...bareNumbers(sourceText, locale));
+  const c = localeData(locale).COMPANY;
+  list.push(...extractFigures(`${c.size}. ${c.capacity}`, locale));
   add("money", ...Object.values(c.rateCard).map((r) => r.rate));
   add("percent", c.discountRate * 100);
   add("time", c.horizonYears * 365, POLICY.investNow.paybackMonths * 30.4);
@@ -177,52 +185,60 @@ export function allowedFigures(state, derived) {
 // --- Applying a validated turn ------------------------------------------------------------------
 
 function classifyClaim(claim, state, allowed) {
-  const cite = checkCitation(claim.quote, IDEAS[state.ideaId].sources, claim.source, sourceScreen(state.ideaId));
+  const { locale } = state;
+  const cite = checkCitation(claim.quote, ideaFor(state.ideaId, locale).sources, claim.source, sourceScreen(state.ideaId, locale), locale);
   if (!cite.ok) return { status: "unsupported", note: cite.reason };
-  const wrong = extractFigures(claim.reason).find((f) => !figureMatches(f, allowed));
-  if (wrong) return { status: "struck", note: `Unverified figure: “${wrong.text}” is not in a cited source or computed by code` };
-  return { status: "accepted", note: `Verified in ${claim.source}` };
+  const wrong = extractFigures(claim.reason, locale).find((f) => !figureMatches(f, allowed));
+  if (wrong) return { status: "struck", note: messages(locale).unverified(wrong.text) };
+  return { status: "accepted", note: messages(locale).verifiedIn(claim.source) };
 }
 
-function displayClaim(c) {
-  return { id: c.id, agent: c.agent, dimension: c.dimension, label: DIMENSIONS[c.dimension].label, score: c.score, from: c.from, source: c.source, quote: c.quote, reason: c.reason, status: c.status, note: c.note };
+function displayClaim(c, locale) {
+  return { id: c.id, agent: c.agent, dimension: c.dimension, label: localeData(locale).DIMENSIONS[c.dimension].label, score: c.score, from: c.from, source: c.source, quote: c.quote, reason: c.reason, status: c.status, note: c.note };
 }
 
-function fmtAssumption(ideaId, key, v) {
+// Amounts are pounds in English and the same values in euro in Italian ("unit: gbp" is the money unit).
+function fmtAssumption(ideaId, key, v, locale = "en") {
   const unit = IDEAS[ideaId].assumptions[key].unit;
-  if (unit === "gbp") return `£${Math.round(v).toLocaleString("en-GB")}`;
-  if (unit === "percent") return `${v}%`;
+  if (unit === "gbp") return money(v, locale);
+  if (unit === "percent") return locale === "it" ? `${String(v).replace(".", ",")}%` : `${v}%`;
   return String(Math.round(v));
 }
 
 function applyAssumptions(state, proposed) {
-  const idea = IDEAS[state.ideaId];
-  const screen = sourceScreen(state.ideaId);
+  const { locale } = state;
+  const msg = messages(locale);
+  const fmt = (key, v) => fmtAssumption(state.ideaId, key, v, locale);
+  const idea = ideaFor(state.ideaId, locale);
+  const screen = sourceScreen(state.ideaId, locale);
   const out = {};
   for (const key of ASSUMPTION_KEYS) {
     const b = idea.assumptions[key];
     const p = proposed[key];
     const cautious = key === "churn" || key === "running" ? b.high : b.low;
-    const cite = p.source ? checkCitation(p.quote, idea.sources, p.source, screen) : { ok: false, reason: "No source cited." };
+    const cite = p.source ? checkCitation(p.quote, idea.sources, p.source, screen, locale) : { ok: false, reason: msg.noSource() };
     const source = idea.sources.some((s) => s.id === p.source) ? p.source : null;
     if (!cite.ok) {
-      out[key] = { value: cautious, proposed: p.value, source, quote: p.quote, rationale: p.rationale, status: "unsupported", note: `${cite.reason} Code used the cautious end of the range (${fmtAssumption(state.ideaId, key, cautious)}).` };
+      out[key] = { value: cautious, proposed: p.value, source, quote: p.quote, rationale: p.rationale, status: "unsupported", note: msg.cautious(cite.reason, fmt(key, cautious)) };
       continue;
     }
     const clamped = Math.min(b.high, Math.max(b.low, p.value));
     out[key] = clamped === p.value
-      ? { value: p.value, proposed: p.value, source, quote: p.quote, rationale: p.rationale, status: "accepted", note: `Within the evidence range; quote verified in ${source}.` }
-      : { value: clamped, proposed: p.value, source, quote: p.quote, rationale: p.rationale, status: "clamped", note: `Proposed ${fmtAssumption(state.ideaId, key, p.value)} lies outside the evidence range ${fmtAssumption(state.ideaId, key, b.low)} to ${fmtAssumption(state.ideaId, key, b.high)}; code clamped it.` };
+      ? { value: p.value, proposed: p.value, source, quote: p.quote, rationale: p.rationale, status: "accepted", note: msg.withinRange(source) }
+      : { value: clamped, proposed: p.value, source, quote: p.quote, rationale: p.rationale, status: "clamped", note: msg.clamped(fmt(key, p.value), fmt(key, b.low), fmt(key, b.high)) };
   }
   return out;
 }
 
 export function applyTurn(prev, turn, value) {
   const state = structuredClone(prev);
-  const idea = IDEAS[state.ideaId];
+  const { locale } = state;
+  const msg = messages(locale);
+  const { DIMENSIONS } = localeData(locale);
+  const idea = ideaFor(state.ideaId, locale);
   const event = { index: state.turn, agent: turn.agent, round: turn.round, kind: turn.kind, claims: [], revisions: [], challenges: [], estimateChanges: [], notes: [] };
 
-  if (state.turn === 0) event.sourceScreen = sourceScreen(state.ideaId).passages;
+  if (state.turn === 0) event.sourceScreen = sourceScreen(state.ideaId, locale).passages;
 
   // 1. Structured proposals that code turns into numbers.
   if (value.estimates?.length) {
@@ -248,18 +264,18 @@ export function applyTurn(prev, turn, value) {
     if (state.claims.length >= MAX_CLAIMS) break;
     const c = { id: `c${state.claims.length + 1}`, agent: turn.agent, ...claim, ...classifyClaim(claim, state, allowed), round: turn.round };
     state.claims.push(c);
-    event.claims.push(displayClaim(c));
+    event.claims.push(displayClaim(c, locale));
   }
   for (const rv of value.revisions || []) {
     const c = state.claims.find((x) => x.id === rv.claim);
-    const wrong = extractFigures(rv.reason).find((f) => !figureMatches(f, allowed));
+    const wrong = extractFigures(rv.reason, locale).find((f) => !figureMatches(f, allowed));
     if (wrong) {
       state.figureStrikes += 1;
-      event.revisions.push({ claim: c.id, label: DIMENSIONS[c.dimension].label, from: c.score, to: rv.score, reason: rv.reason, status: "struck", note: `Revision struck: unverified figure “${wrong.text}”` });
+      event.revisions.push({ claim: c.id, label: DIMENSIONS[c.dimension].label, from: c.score, to: rv.score, reason: rv.reason, status: "struck", note: msg.revisionStruck(wrong.text) });
       continue;
     }
     if (rv.score === c.score) continue;
-    event.revisions.push({ claim: c.id, label: DIMENSIONS[c.dimension].label, from: c.score, to: rv.score, reason: rv.reason, status: c.status, note: c.status === "accepted" ? "Score revised" : `Revised, but still excluded (${c.status})` });
+    event.revisions.push({ claim: c.id, label: DIMENSIONS[c.dimension].label, from: c.score, to: rv.score, reason: rv.reason, status: c.status, note: c.status === "accepted" ? msg.scoreRevised() : msg.stillExcluded(msg.status[c.status]) });
     if (c.from === undefined) c.from = c.score;
     c.score = rv.score;
   }
@@ -268,27 +284,27 @@ export function applyTurn(prev, turn, value) {
     event.challenges = value.challenges.map((ch) => {
       const c = state.claims.find((x) => x.id === ch.target);
       const wp = idea.workPackages.find((w) => w.id === ch.target);
-      return { ...ch, targetAgent: c ? c.agent : "delivery", label: c ? DIMENSIONS[c.dimension].label : `Estimate: ${wp.label}` };
+      return { ...ch, targetAgent: c ? c.agent : "delivery", label: c ? DIMENSIONS[c.dimension].label : msg.estimateTarget(wp.label) };
     });
   }
 
   // 3. Recompute everything, then screen the agent's own words for unverified figures.
   derived = derive(state);
   allowed = allowedFigures(state, derived);
-  const sentences = screenStatement(value.message, allowed);
+  const sentences = screenStatement(value.message, allowed, locale);
   let struck = sentences.filter((s) => s.struck).length;
 
   if (state.assumptions && value.assumptions) {
     for (const a of Object.values(state.assumptions)) {
-      const check = checkFigures([{ text: a.rationale, struck: null }], allowed)[0];
-      if (check.struck) { struck += 1; a.note = `${a.note} Rationale struck: ${check.struck.toLowerCase()}.`.slice(0, 200); a.rationale = ""; }
+      const check = checkFigures([{ text: a.rationale, struck: null }], allowed, locale)[0];
+      if (check.struck) { struck += 1; a.note = msg.rationaleStruck(a.note, check.struck).slice(0, 200); a.rationale = ""; }
     }
   }
   if (turn.kind === "brief") {
     for (const [list, target] of [[value.dissent, state.chairNotes], [value.mindChangers, state.mindNotes]]) {
       for (const note of list) {
-        const check = checkFigures([{ text: note, struck: null }], allowed)[0];
-        if (check.struck) { struck += 1; event.notes.push(`A Chair's note was struck: ${check.struck.toLowerCase()}.`); }
+        const check = checkFigures([{ text: note, struck: null }], allowed, locale)[0];
+        if (check.struck) { struck += 1; event.notes.push(msg.chairNoteStruck(check.struck)); }
         else target.push(note);
       }
     }
@@ -304,7 +320,7 @@ export function applyTurn(prev, turn, value) {
   if (turn.kind === "assumptions") event.assumptions = assumptionRows(state);
   if (turn.kind === "case" && derived.finance) event.finance = financeSummary(derived.finance);
   if (turn.kind === "brief") event.tier = derived.tier;
-  event.counters = auditCounters(state.claims, state.figureStrikes, sourceScreen(state.ideaId).passages.length);
+  event.counters = auditCounters(state.claims, state.figureStrikes, sourceScreen(state.ideaId, locale).passages.length);
   return { state, event };
 }
 
@@ -316,7 +332,7 @@ function financeSummary(f) {
 }
 
 export function assumptionRows(state) {
-  const idea = IDEAS[state.ideaId];
+  const idea = ideaFor(state.ideaId, state.locale);
   return ASSUMPTION_KEYS.map((key) => {
     const a = state.assumptions[key];
     const b = idea.assumptions[key];
@@ -327,29 +343,31 @@ export function assumptionRows(state) {
 // "What would change the board's mind": code-computed lines first, then the Chair's verified notes.
 function mindChangers(state, derived) {
   const { finance, metrics, tier } = derived;
+  const { locale } = state;
+  const msg = messages(locale);
   const lines = [];
   const t = finance.top;
-  const fmt = (key, v) => (key === "devCost" ? `£${Math.round(v).toLocaleString("en-GB")}` : fmtAssumption(state.ideaId, key, v));
+  const fmt = (key, v) => (key === "devCost" ? money(v, locale) : fmtAssumption(state.ideaId, key, v, locale));
   const baseValue = finance.scenarios.base.inputs[t.key];
-  if (t.breakEven === null) lines.push(`No reachable value of ${t.label.toLowerCase()} alone brings the base-case NPV to zero; several inputs would have to change together.`);
-  else if (finance.scenarios.base.npv > 0) lines.push(`If ${t.label.toLowerCase()} came in at ${fmt(t.key, t.breakEven)} instead of ${fmt(t.key, baseValue)}, the base-case NPV would fall to zero.`);
-  else lines.push(`${t.label} would need to reach ${fmt(t.key, t.breakEven)} instead of ${fmt(t.key, baseValue)} for the base-case NPV to break even.`);
+  if (t.breakEven === null) lines.push(msg.noBreakEven(t.label));
+  else if (finance.scenarios.base.npv > 0) lines.push(msg.wouldBreak(t.label, fmt(t.key, t.breakEven), fmt(t.key, baseValue)));
+  else lines.push(msg.wouldRecover(t.label, fmt(t.key, t.breakEven), fmt(t.key, baseValue)));
   if (tier.id !== "invest") {
     const p = POLICY.investNow;
     const gaps = [];
-    if (metrics.strategicFit < p.strategicFit) gaps.push(`strategic fit ${metrics.strategicFit} → ${p.strategicFit}`);
-    if (metrics.evidenceStrength < p.evidenceStrength) gaps.push(`evidence strength ${metrics.evidenceStrength} → ${p.evidenceStrength}`);
-    if (finance.scenarios.base.npv <= 0) gaps.push("base-case NPV above zero");
+    if (metrics.strategicFit < p.strategicFit) gaps.push(msg.gapFit(metrics.strategicFit, p.strategicFit));
+    if (metrics.evidenceStrength < p.evidenceStrength) gaps.push(msg.gapEvidence(metrics.evidenceStrength, p.evidenceStrength));
+    if (finance.scenarios.base.npv <= 0) gaps.push(msg.gapNpv());
     const pb = finance.scenarios.base.paybackMonths;
-    if (pb === null || pb > p.paybackMonths) gaps.push(`payback within ${p.paybackMonths} months (now ${pb === null ? "beyond 3 years" : `${pb} months`})`);
-    if (gaps.length) lines.push(`To reach “Invest now” under the policy: ${gaps.join("; ")}.`);
+    if (pb === null || pb > p.paybackMonths) gaps.push(msg.gapPayback(p.paybackMonths, pb));
+    if (gaps.length) lines.push(msg.toInvest(localeData(locale).TIERS.invest, gaps));
   }
   return [...lines.map((text) => ({ by: "code", text })), ...state.mindNotes.map((text) => ({ by: "chair", text }))];
 }
 
 export function buildBrief(state) {
   const derived = derive(state);
-  const counters = auditCounters(state.claims, state.figureStrikes, sourceScreen(state.ideaId).passages.length);
+  const counters = auditCounters(state.claims, state.figureStrikes, sourceScreen(state.ideaId, state.locale).passages.length);
   const challenges = state.challenges.filter((ch) => !(IDEAS[state.ideaId].workPackages.some((w) => w.id === ch.target) && state.revisedPackages.includes(ch.target)))
     .map((ch) => (IDEAS[state.ideaId].workPackages.some((w) => w.id === ch.target) ? { ...ch, target: "estimate" } : ch));
   return {
@@ -362,9 +380,9 @@ export function buildBrief(state) {
     experiment: derived.experiment,
     assumptions: assumptionRows(state),
     mindChangers: mindChangers(state, derived),
-    dissent: findDissent(state.claims, challenges, state.chairNotes, derived.metrics),
+    dissent: findDissent(state.claims, challenges, state.chairNotes, derived.metrics, state.locale),
     counters,
-    claims: state.claims.map(displayClaim),
+    claims: state.claims.map((c) => displayClaim(c, state.locale)),
     usage: state.usage
   };
 }
@@ -373,21 +391,22 @@ export function buildBrief(state) {
 
 async function liveOutput(turn, state, env, deps) {
   const apiKey = env.DEEPSEEK_API_KEY;
-  if (!apiKey) return { fallback: "No LLM key is configured." };
+  const msg = messages(state.locale);
+  if (!apiKey) return { fallback: msg.noKey() };
   const derived = derive(state);
   const extra = {};
   if (turn.kind === "assumptions" || turn.kind === "case" || turn.kind === "brief") extra.estimate = derived.estimate;
   if (turn.kind === "case" || turn.kind === "brief") extra.finance = derived.finance;
   if (turn.kind === "brief") { extra.metrics = derived.metrics; extra.tier = derived.tier; extra.experiment = derived.experiment; }
-  const messages = [
-    { role: "system", content: systemPrompt(turn) },
+  const conversation = [
+    { role: "system", content: systemPrompt(turn, state.locale) },
     { role: "user", content: userPrompt(turn, state, extra) }
   ];
   const usage = { promptTokens: 0, completionTokens: 0, calls: 0 };
   const invalid = [];
   for (let attempt = 0; attempt < 2; attempt++) {
-    const reply = await callLlm({ apiKey, model: resolveModel(env), messages, maxTokens: MAX_TOKENS[turn.kind], fetchImpl: deps.fetchImpl, sleep: deps.sleep });
-    if (!reply.ok) return { fallback: `The LLM provider was unavailable (${reply.error}).`, usage };
+    const reply = await callLlm({ apiKey, model: resolveModel(env), messages: conversation, maxTokens: MAX_TOKENS[turn.kind], fetchImpl: deps.fetchImpl, sleep: deps.sleep });
+    if (!reply.ok) return { fallback: msg.providerDown(reply.error), usage };
     usage.promptTokens += reply.usage.promptTokens;
     usage.completionTokens += reply.usage.completionTokens;
     usage.calls += 1;
@@ -395,25 +414,27 @@ async function liveOutput(turn, state, env, deps) {
     const check = parsed ? validateOutput(turn, parsed, state) : { ok: false, errors: ["reply was not valid JSON"] };
     if (check.ok) return { output: parsed, value: check.value, usage, invalid };
     invalid.push(check.errors.slice(0, 4).join("; "));
-    messages.push({ role: "assistant", content: reply.content.slice(0, 1500) });
-    messages.push({ role: "user", content: `Your reply was rejected: ${check.errors.slice(0, 4).join("; ")}. Reply again with one valid JSON object.` });
+    conversation.push({ role: "assistant", content: reply.content.slice(0, 1500) });
+    conversation.push({ role: "user", content: `Your reply was rejected: ${check.errors.slice(0, 4).join("; ")}. Reply again with one valid JSON object.` });
   }
-  return { fallback: "The agent returned an invalid turn twice.", usage };
+  return { fallback: msg.invalidTwice(), usage };
 }
 
+// The recording of the run's locale: an Italian run replays the Italian transcript.
 async function recordedOutput(turn, state, deps) {
-  const recording = await deps.loadRecording(state.ideaId);
+  const msg = messages(state.locale);
+  const recording = await deps.loadRecording(state.ideaId, state.locale);
   const entry = recording?.turns?.[state.turn];
-  if (!entry?.output || entry.agent !== turn.agent || entry.kind !== turn.kind) return { error: "The recorded transcript is missing this turn." };
+  if (!entry?.output || entry.agent !== turn.agent || entry.kind !== turn.kind) return { error: msg.recordingMissing() };
   const check = validateOutput(turn, entry.output, state);
-  if (!check.ok) return { error: "The recorded transcript failed validation." };
+  if (!check.ok) return { error: msg.recordingInvalid() };
   return { output: entry.output, value: check.value, usage: null, invalid: entry.invalidReplies || [], model: recording.model };
 }
 
 // state must already be verified (or freshly created). Returns the JSON body for the page.
 export async function runTurn({ state, env = {}, deps = {} }) {
   const turn = turnAt(state.turn);
-  if (!turn) return { error: "The board has already used all its turns." };
+  if (!turn) return { error: messages(state.locale).turnsUsed() };
   const result = state.mode === "live" ? await liveOutput(turn, state, env, deps) : await recordedOutput(turn, state, deps);
   if (result.error) return { error: result.error };
   if (result.fallback) return { fallback: true, reason: result.fallback };
@@ -439,8 +460,8 @@ export async function runTurn({ state, env = {}, deps = {} }) {
   };
 }
 
-export function startState(ideaId, mode) {
-  return initialState(ideaId, mode);
+export function startState(ideaId, mode, locale) {
+  return initialState(ideaId, mode, locale);
 }
 
 export { splitSentences };

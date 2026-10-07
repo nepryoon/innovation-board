@@ -2,7 +2,9 @@
 // estimate, the three-year cash-flow model, sensitivity, break-even, the next experiment and the tier.
 // Agents propose scores, estimates and assumptions; this code validates them and does the arithmetic.
 
-import { COMPANY, POLICY, TIERS, IDEAS, DIMENSIONS, AGENTS, ASSUMPTION_KEYS, SOURCE_TYPES, GRADE_WEIGHTS, sourceMap, experimentCost } from "./data.js";
+import { COMPANY, POLICY, IDEAS, ASSUMPTION_KEYS, SOURCE_TYPES, GRADE_WEIGHTS, sourceMap, experimentCost } from "./data.js";
+import { localeData } from "./locale.js";
+import { messages } from "./messages.js";
 
 export const Z80 = 1.28;
 
@@ -16,6 +18,19 @@ export const FORMULA = [
   "NPV = −development cost + Σ net cash flowₜ ÷ (1 + discount rate)ᵗ, t = 1 to 3; ROI = (Σ net cash flow − development cost) ÷ development cost",
   "Payback = the month in which cumulative cash flow, starting at −development cost, reaches zero (linear within the year)"
 ];
+
+export const FORMULA_IT = [
+  "Punteggio di dimensione (coerenza strategica, domanda di mercato, fattibilità, rischio) = 20 × media dei punteggi da 1 a 5 accettati per quella dimensione, oppure 0 se non ce ne sono",
+  "Solidità delle evidenze = 100 × (accettate ÷ affermazioni fatte) × Σ q · punteggio ÷ (5 · Σ q), sulle affermazioni accettate, con qualità della fonte q = 1 primaria, 0,6 secondaria, 0,2 promozionale",
+  "Ritorno finanziario = limite(40 + 30 × ROI dello scenario base, 0, 100)",
+  "PERT per pacchetto di lavoro: E = (o + 4m + p) ÷ 6, σ = (p − o) ÷ 6; σ totale = √Σσ²; intervallo = E ± 1,28σ (confidenza dell'80% circa)",
+  "Durata in settimane = giorni-persona ÷ (persone del team × giorni produttivi a settimana); costo = Σ giorni-persona × tariffa giornaliera del ruolo",
+  "Clienti: C₀ = 0, Cₜ = Cₜ₋₁ × (1 − churn) + adozione; ricavo o risparmio nell'anno t = prezzo × (Cₜ₋₁ + Cₜ) ÷ 2; flusso di cassa netto = ricavo − costo di esercizio",
+  "VAN (NPV) = −costo di sviluppo + Σ flusso di cassa nettoₜ ÷ (1 + tasso di sconto)ᵗ, t = da 1 a 3; ROI = (Σ flusso di cassa netto − costo di sviluppo) ÷ costo di sviluppo",
+  "Payback = il mese in cui il flusso di cassa cumulato, che parte da −costo di sviluppo, arriva a zero (lineare all'interno dell'anno)"
+];
+
+export const FORMULAS = { en: FORMULA, it: FORMULA_IT };
 
 const mean = (values) => (values.length ? values.reduce((a, b) => a + b, 0) / values.length : 0);
 const round1 = (v) => Math.round(v * 10) / 10;
@@ -66,14 +81,15 @@ export function rangeError(e) {
   return null;
 }
 
-export function computeEstimate(ideaId, estimates) {
-  const idea = IDEAS[ideaId];
+export function computeEstimate(ideaId, estimates, locale = "en") {
+  const { IDEAS: L, COMPANY: C } = localeData(locale);
+  const idea = L[ideaId];
   const rows = idea.workPackages.map((wp) => {
     const { o, m, p } = estimates[wp.id];
     const expected = (o + 4 * m + p) / 6;
     const sd = (p - o) / 6;
     const rate = COMPANY.rateCard[wp.role].rate;
-    return { id: wp.id, label: wp.label, role: COMPANY.rateCard[wp.role].label, rate, o, m, p, expected: round1(expected), sd: round1(sd), cost: Math.round(expected * rate), _e: expected, _sd: sd };
+    return { id: wp.id, label: wp.label, role: C.rateCard[wp.role].label, rate, o, m, p, expected: round1(expected), sd: round1(sd), cost: Math.round(expected * rate), _e: expected, _sd: sd };
   });
   const effort = rows.reduce((s, r) => s + r._e, 0);
   const effortSd = Math.sqrt(rows.reduce((s, r) => s + r._sd ** 2, 0));
@@ -131,15 +147,15 @@ export function scenarioInputs(ideaId, base, estimate) {
   };
 }
 
-const INPUT_LABEL = (ideaId, key) => (key === "devCost" ? "Development cost" : IDEAS[ideaId].assumptions[key].label);
+const INPUT_LABEL = (ideaId, key, locale = "en") => (key === "devCost" ? messages(locale).devCost() : localeData(locale).IDEAS[ideaId].assumptions[key].label);
 
-export function sensitivity(ideaId, inputs) {
+export function sensitivity(ideaId, inputs, locale = "en") {
   const rows = [...ASSUMPTION_KEYS, "devCost"].map((key) => {
     const worst = inputs.pessimistic[key];
     const best = inputs.optimistic[key];
     const npvWorst = cashFlows({ ...inputs.base, [key]: worst }).npv;
     const npvBest = cashFlows({ ...inputs.base, [key]: best }).npv;
-    return { key, label: INPUT_LABEL(ideaId, key), worst, best, npvWorst, npvBest, swing: Math.abs(npvBest - npvWorst) };
+    return { key, label: INPUT_LABEL(ideaId, key, locale), worst, best, npvWorst, npvBest, swing: Math.abs(npvBest - npvWorst) };
   });
   rows.sort((x, y) => y.swing - x.swing);
   return rows;
@@ -161,10 +177,10 @@ export function breakEven(inputs, key) {
   return (lo + hi) / 2;
 }
 
-export function computeFinance(ideaId, base, estimate) {
+export function computeFinance(ideaId, base, estimate, locale = "en") {
   const inputs = scenarioInputs(ideaId, base, estimate);
   const scenarios = Object.fromEntries(Object.entries(inputs).map(([name, i]) => [name, { inputs: i, ...cashFlows(i) }]));
-  const sens = sensitivity(ideaId, inputs);
+  const sens = sensitivity(ideaId, inputs, locale);
   const top = sens[0];
   const be = breakEven(inputs, top.key);
   return {
@@ -185,16 +201,13 @@ function roundInput(key, value) {
 
 // --- Classification, next experiment, dissent --------------------------------------------------
 
-export function classify(metrics, finance) {
+// The thresholds are the same in every locale; only the wording of the rules changes.
+export function classify(metrics, finance, locale = "en") {
   const base = finance.scenarios.base;
   const opt = finance.scenarios.optimistic;
   const p = POLICY;
-  const rules = {
-    invest: `Invest now: strategic fit ≥ ${p.investNow.strategicFit}, evidence strength ≥ ${p.investNow.evidenceStrength}, base-case NPV > 0 and base-case payback ≤ ${p.investNow.paybackMonths} months`,
-    pilot: `Run a pilot: strategic fit ≥ ${p.pilot.strategicFit}, evidence strength ≥ ${p.pilot.evidenceStrength} and base-case NPV > 0`,
-    explore: "Explore further: the optimistic-case NPV is above zero, so there is upside, but the stronger rules are not met",
-    park: "Park: none of the rules above is met; even the optimistic case does not return the investment"
-  };
+  const rules = messages(locale).rules(p);
+  const TIERS = localeData(locale).TIERS;
   let id = "park";
   if (metrics.strategicFit >= p.investNow.strategicFit && metrics.evidenceStrength >= p.investNow.evidenceStrength && base.npv > 0 && base.paybackMonths !== null && base.paybackMonths <= p.investNow.paybackMonths) id = "invest";
   else if (metrics.strategicFit >= p.pilot.strategicFit && metrics.evidenceStrength >= p.pilot.evidenceStrength && base.npv > 0) id = "pilot";
@@ -204,46 +217,49 @@ export function classify(metrics, finance) {
 
 export const TIER_ORDER = ["park", "explore", "pilot", "invest"];
 
-export function decideTier(metrics, finance, chairSuggestion) {
-  const tier = classify(metrics, finance);
+export function decideTier(metrics, finance, chairSuggestion, locale = "en") {
+  const TIERS = localeData(locale).TIERS;
+  const tier = classify(metrics, finance, locale);
   const overridden = Boolean(chairSuggestion) && chairSuggestion !== tier.id;
   return { ...tier, chairSuggestion: chairSuggestion ? TIERS[chairSuggestion] : null, overridden };
 }
 
-export function nextExperiment(ideaId, topKey) {
-  const all = IDEAS[ideaId].experiments.map((x) => ({ ...x, cost: experimentCost(x) }));
+export function nextExperiment(ideaId, topKey, locale = "en") {
+  const { IDEAS: L, COMPANY: C } = localeData(locale);
+  const msg = messages(locale);
+  const all = L[ideaId].experiments.map((x) => ({ ...x, cost: experimentCost(x) }));
   const targeted = all.filter((x) => x.targets === topKey);
   const pool = targeted.length ? targeted : all;
   const pick = pool.reduce((a, b) => (b.cost < a.cost ? b : a));
-  const breakdown = Object.entries(pick.days).map(([role, days]) => ({ role: COMPANY.rateCard[role].label, days, rate: COMPANY.rateCard[role].rate }));
+  const breakdown = Object.entries(pick.days).map(([role, days]) => ({ role: C.rateCard[role].label, days, rate: C.rateCard[role].rate }));
   return {
     id: pick.id,
     label: pick.label,
-    targets: INPUT_LABEL(ideaId, pick.targets),
+    targets: INPUT_LABEL(ideaId, pick.targets, locale),
     weeks: pick.weeks,
     cost: pick.cost,
     breakdown,
-    reason: targeted.length
-      ? `Cheapest listed experiment that tests the assumption that moves the result most (${INPUT_LABEL(ideaId, topKey).toLowerCase()}).`
-      : "No listed experiment tests the most sensitive input directly, so this is the cheapest listed experiment."
+    reason: targeted.length ? msg.experimentTargeted(INPUT_LABEL(ideaId, topKey, locale)) : msg.experimentFallback()
   };
 }
 
-export function findDissent(claims, challenges, chairNotes, metrics) {
+export function findDissent(claims, challenges, chairNotes, metrics, locale = "en") {
+  const { AGENTS, DIMENSIONS } = localeData(locale);
+  const msg = messages(locale);
   const entries = [];
   for (const ch of challenges) {
     if (ch.target === "estimate") {
-      entries.push({ agents: ["auditor", "delivery"], topic: "Development estimate", note: `${AGENTS.auditor.name} challenged the estimate: ${ch.note || ch.issue}` });
+      entries.push({ agents: ["auditor", "delivery"], topic: msg.dissentEstimateTopic(), note: msg.dissentEstimate(AGENTS.auditor.name, ch.note || msg.issue[ch.issue] || ch.issue) });
       continue;
     }
     const claim = claims.find((c) => c.id === ch.target);
     if (claim && claim.status === "accepted" && claim.from === undefined) {
-      entries.push({ agents: ["auditor", claim.agent], topic: DIMENSIONS[claim.dimension].label, note: `${AGENTS.auditor.name}'s challenge to ${claim.id} was not answered with a revision; the score stands at ${claim.score} of 5.` });
+      entries.push({ agents: ["auditor", claim.agent], topic: DIMENSIONS[claim.dimension].label, note: msg.dissentUnanswered(AGENTS.auditor.name, claim.id, claim.score) });
     }
   }
   if (metrics && Math.abs(metrics.strategicFit - metrics.marketPull) >= 30) {
-    entries.push({ agents: ["strategy", "market"], topic: "Fit against demand", note: `Strategic fit is ${metrics.strategicFit} but market pull is ${metrics.marketPull}: the idea suits the strategy better than the evidence of demand supports, or the reverse.` });
+    entries.push({ agents: ["strategy", "market"], topic: msg.dissentFitTopic(), note: msg.dissentFit(metrics.strategicFit, metrics.marketPull) });
   }
-  for (const note of chairNotes) entries.push({ agents: ["chair"], topic: "Chair's note", note });
+  for (const note of chairNotes) entries.push({ agents: ["chair"], topic: msg.chairTopic(), note });
   return entries.slice(0, 8);
 }

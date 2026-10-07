@@ -2,7 +2,8 @@
 // completions API. Prompts are built on the server from allow-listed data and the validated run state;
 // no visitor text ever reaches the model.
 
-import { COMPANY, AGENTS, IDEAS, DIMENSIONS, POLICY, TIERS, dimensionsFor, ASSUMPTION_KEYS } from "./data.js";
+import { AGENTS, POLICY, dimensionsFor, ASSUMPTION_KEYS } from "./data.js";
+import { localeData, ideaFor, money, num, percent } from "./locale.js";
 
 export const DEFAULT_BASE_URL = "https://api.deepseek.com";
 export const DEFAULT_MODEL = "deepseek-flash";
@@ -60,100 +61,165 @@ function formatFor(turn) {
   return FORMATS[turn.kind];
 }
 
-export function systemPrompt(turn) {
+// Italian runs keep the English instructions, which the model follows best, and change the language
+// rule: every statement is written in Italian and every quote is copied from the Italian sources.
+const LANGUAGE_RULE_IT = [
+  "- Language: write every text field (message, reason, note, rationale, dissent, mindChangers) in natural, professional Italian, as an Italian manager would write it, concise and impersonal; never a literal translation from English. Keep the English business terms Italians use (ROI, payback, add-on, churn, business case) and write VAN for NPV.",
+  "- Quotes are copied verbatim from the Italian evidence pack, in Italian, with the same accents and apostrophes. Never translate, shorten inside or paraphrase a quote.",
+  "- Write figures the Italian way: 1.240 (thousands dot), 12,5% (decimal comma), 66.968 € (euro sign after the amount), 26,8 mesi. All money is in euro.",
+  "- JSON keys, ids (s1, c2, w1) and enum values (fit, market, invest, pilot, unsupported…) stay in English. No markdown. Answer with one JSON object only."
+].join("\n");
+
+export function systemPrompt(turn, locale = "en") {
   const agent = AGENTS[turn.agent];
+  const it = locale === "it";
+  const rules = it ? SHARED_RULES.split("\n").slice(0, -1).join("\n") + "\n" + LANGUAGE_RULE_IT : SHARED_RULES;
+  const who = it ? `${agent.role} (Italian title: ${localeData("it").AGENTS[turn.agent].role})` : agent.role;
   return [
-    `You are ${agent.name}, the ${agent.role} on a board of AI agents assessing the commercial potential of a software product idea for ${COMPANY.name}.`,
+    `You are ${agent.name}, the ${who} on a board of AI agents assessing the commercial potential of a software product idea for ${localeData(locale).COMPANY.name}.`,
     "The board prepares decision support for a human. It never decides. All data is synthetic.",
-    SHARED_RULES,
+    rules,
     `Your task (round ${turn.round}): ${instructionFor(turn)}`,
     `JSON format: ${formatFor(turn)}`
   ].join("\n");
 }
 
-const money = (n) => `£${Math.round(n).toLocaleString("en-GB")}`;
+// The words of the user prompt. English is the original prompt, unchanged.
+const WORDS = {
+  en: {
+    company: (c) => `Company: ${c.name}. ${c.sector}. ${c.size}.`,
+    priorities: "Priorities", products: "Products", capacity: "Capacity",
+    rates: (rates, c) => `Day rates: ${rates}. Discount rate ${c.discountRate * 100}%. Horizon ${c.horizonYears} years.`,
+    idea: "Idea", pack: "Evidence pack (synthetic; cite these ids only):", dimensions: "Your dimensions",
+    packages: (list) => `Work packages: ${list}. Rules: whole person-days, o ≤ m ≤ p, p at most six times o.`,
+    yourClaims: "Your claims:", claimsSoFar: "Claims so far:", revisedFrom: (n) => ` (revised from ${n})`,
+    estimate: "Current estimate (person-days): ",
+    challenges: "Challenges to you: ", noChallenges: "No challenges to you.",
+    ranges: (list) => `Evidence ranges for the base case: ${list}. Give churn as a percentage number, money in pounds.`,
+    rangeItem: (k, label, lo, hi, sources) => `${k} (${label}) ${lo} to ${hi}, see ${sources}`,
+    discussion: "Board discussion so far:",
+    computedEstimate: (e, m) => `Computed development estimate: ${e.effort.low} to ${e.effort.high} person-days (expected ${e.effort.expected}), ${e.weeks.low} to ${e.weeks.high} weeks for a squad of ${e.teamSize}, cost ${m(e.cost.low)} to ${m(e.cost.high)} (expected ${m(e.cost.expected)}).`,
+    scenario: (name, s, m) => `${name}: NPV ${m(s.npv)}, ROI ${s.roiPercent}%, payback ${s.paybackMonths === null ? "not within 3 years" : `${s.paybackMonths} months`}.`,
+    scenarioName: (name) => name,
+    top: (label, be) => `Input that moves NPV most: ${label}${be === null ? "" : `; base-case NPV is zero at ${be}`}.`,
+    perYear: (n) => `${n} a year`,
+    metrics: (json) => `Computed metrics (0 to 100): ${json}.`,
+    experiment: (x, m) => `Cheapest next experiment chosen by code: ${x.label}, ${m(x.cost)}, ${x.weeks} weeks.`,
+    tier: (t) => `Investment policy result computed by code: ${t.label} (${t.rule}).`,
+    tiers: (list, p) => `Tiers: ${list}. Policy: invest needs fit ≥ ${p.investNow.strategicFit}, evidence ≥ ${p.investNow.evidenceStrength}, NPV > 0 and payback ≤ ${p.investNow.paybackMonths} months.`,
+    now: "Reply with the JSON object now."
+  },
+  it: {
+    company: (c) => `Azienda: ${c.name}. ${c.sector}. ${c.size}.`,
+    priorities: "Priorità", products: "Prodotti", capacity: "Capacità",
+    rates: (rates, c) => `Tariffe giornaliere: ${rates}. Tasso di sconto ${c.discountRate * 100}%. Orizzonte ${c.horizonYears} anni.`,
+    idea: "Idea", pack: "Pacchetto di evidenze (dati sintetici; citare solo questi id):", dimensions: "Le tue dimensioni",
+    packages: (list) => `Pacchetti di lavoro: ${list}. Regole: giorni-persona interi, o ≤ m ≤ p, p al massimo sei volte o.`,
+    yourClaims: "Le tue affermazioni:", claimsSoFar: "Affermazioni finora:", revisedFrom: (n) => ` (rivisto da ${n})`,
+    estimate: "Stima attuale (giorni-persona): ",
+    challenges: "Contestazioni rivolte a te: ", noChallenges: "Nessuna contestazione rivolta a te.",
+    ranges: (list) => `Intervalli delle evidenze per lo scenario base: ${list}. Nel JSON "value" è un numero semplice (per esempio 1950 o 7): churn in punti percentuali, importi in euro.`,
+    rangeItem: (k, label, lo, hi, sources) => `${k} (${label}) da ${lo} a ${hi}, vedi ${sources}`,
+    discussion: "Discussione del board finora:",
+    computedEstimate: (e, m) => `Stima di sviluppo calcolata dal codice: da ${num(e.effort.low, "it")} a ${num(e.effort.high, "it")} giorni-persona (attesi ${num(e.effort.expected, "it")}), da ${num(e.weeks.low, "it")} a ${num(e.weeks.high, "it")} settimane per un team di ${e.teamSize} persone, costo da ${m(e.cost.low)} a ${m(e.cost.high)} (atteso ${m(e.cost.expected)}).`,
+    scenario: (name, s, m) => `${name}: VAN ${m(s.npv)}, ROI ${s.roiPercent}%, payback ${s.paybackMonths === null ? "non raggiunto entro 3 anni" : `${num(s.paybackMonths, "it")} mesi`}.`,
+    scenarioName: (name) => ({ pessimistic: "Scenario pessimistico", base: "Scenario base", optimistic: "Scenario ottimistico" })[name],
+    top: (label, be) => `Variabile che incide di più sul VAN: ${label}${be === null ? "" : `; il VAN dello scenario base si azzera a ${be}`}.`,
+    perYear: (n) => `${num(n, "it")} all'anno`,
+    metrics: (json) => `Metriche calcolate dal codice (da 0 a 100): ${json}.`,
+    experiment: (x, m) => `Esperimento successivo più economico scelto dal codice: ${x.label}, ${m(x.cost)}, ${x.weeks} settimane.`,
+    tier: (t) => `Esito della politica di investimento calcolato dal codice: ${t.label} (${t.rule}).`,
+    tiers: (list, p) => `Fasce: ${list}. Politica: invest richiede coerenza strategica ≥ ${p.investNow.strategicFit}, solidità delle evidenze ≥ ${p.investNow.evidenceStrength}, VAN > 0 e payback ≤ ${p.investNow.paybackMonths} mesi.`,
+    now: "Rispondi ora con l'oggetto JSON."
+  }
+};
+const wordsFor = (locale) => WORDS[locale] || WORDS.en;
 
-function companyLines() {
-  const c = COMPANY;
+function companyLines(locale) {
+  const c = localeData(locale).COMPANY;
+  const w = wordsFor(locale);
+  const m = (n) => money(n, locale);
   return [
-    `Company: ${c.name}. ${c.sector}. ${c.size}.`,
-    `Priorities: ${c.priorities.join("; ")}.`,
-    `Products: ${c.products.join("; ")}.`,
-    `Capacity: ${c.capacity}`,
-    `Day rates: ${Object.values(c.rateCard).map((r) => `${r.label} ${money(r.rate)}`).join(", ")}. Discount rate ${c.discountRate * 100}%. Horizon ${c.horizonYears} years.`
+    w.company(c),
+    `${w.priorities}: ${c.priorities.join("; ")}.`,
+    `${w.products}: ${c.products.join("; ")}.`,
+    `${w.capacity}: ${c.capacity}`,
+    w.rates(Object.values(c.rateCard).map((r) => `${r.label} ${m(r.rate)}`).join(", "), c)
   ];
 }
 
-function claimLine(c) {
-  const revised = c.from !== undefined ? ` (revised from ${c.from})` : "";
+function claimLine(c, locale) {
+  const revised = c.from !== undefined ? wordsFor(locale).revisedFrom(c.from) : "";
   return `${c.id} ${AGENTS[c.agent].name} ${c.dimension}: ${c.score}/5${revised} [${c.status}] ${c.source} "${c.quote.slice(0, 110)}"`;
 }
 
 function estimateLines(state) {
   if (!state.estimates) return [];
-  return ["Current estimate (person-days): " + IDEAS[state.ideaId].workPackages.map((w) => `${w.id} ${w.label} o${state.estimates[w.id].o}/m${state.estimates[w.id].m}/p${state.estimates[w.id].p}`).join("; ") + "."];
+  const idea = ideaFor(state.ideaId, state.locale);
+  return [wordsFor(state.locale).estimate + idea.workPackages.map((w) => `${w.id} ${w.label} o${state.estimates[w.id].o}/m${state.estimates[w.id].m}/p${state.estimates[w.id].p}`).join("; ") + "."];
 }
 
-export function computedLines(extra) {
+export function computedLines(extra, locale = "en") {
+  const w = wordsFor(locale);
+  const m = (n) => money(n, locale);
   const lines = [];
-  if (extra.estimate) {
-    const e = extra.estimate;
-    lines.push(`Computed development estimate: ${e.effort.low} to ${e.effort.high} person-days (expected ${e.effort.expected}), ${e.weeks.low} to ${e.weeks.high} weeks for a squad of ${e.teamSize}, cost ${money(e.cost.low)} to ${money(e.cost.high)} (expected ${money(e.cost.expected)}).`);
-  }
+  if (extra.estimate) lines.push(w.computedEstimate(extra.estimate, m));
   if (extra.finance) {
     const f = extra.finance;
-    for (const [name, s] of Object.entries(f.scenarios)) {
-      lines.push(`${name}: NPV ${money(s.npv)}, ROI ${s.roiPercent}%, payback ${s.paybackMonths === null ? "not within 3 years" : `${s.paybackMonths} months`}.`);
-    }
+    for (const [name, s] of Object.entries(f.scenarios)) lines.push(w.scenario(w.scenarioName(name), s, m));
     const t = f.top;
-    lines.push(`Input that moves NPV most: ${t.label}${t.breakEven === null ? "" : `; base-case NPV is zero at ${t.key === "churn" ? `${t.breakEven}%` : t.key === "adoption" ? `${t.breakEven} a year` : money(t.breakEven)}`}.`);
+    const be = t.breakEven === null ? null : t.key === "churn" ? percent(t.breakEven, locale) : t.key === "adoption" ? w.perYear(t.breakEven) : m(t.breakEven);
+    lines.push(w.top(t.label, be));
   }
-  if (extra.metrics) lines.push(`Computed metrics (0 to 100): ${JSON.stringify(extra.metrics)}.`);
-  if (extra.experiment) lines.push(`Cheapest next experiment chosen by code: ${extra.experiment.label}, ${money(extra.experiment.cost)}, ${extra.experiment.weeks} weeks.`);
-  if (extra.tier) lines.push(`Investment policy result computed by code: ${extra.tier.label} (${extra.tier.rule}).`);
+  if (extra.metrics) lines.push(w.metrics(JSON.stringify(extra.metrics)));
+  if (extra.experiment) lines.push(w.experiment(extra.experiment, m));
+  if (extra.tier) lines.push(w.tier(extra.tier));
   return lines;
 }
 
 export function userPrompt(turn, state, extra = {}) {
-  const idea = IDEAS[state.ideaId];
-  const lines = [...companyLines(), `Idea: ${idea.title}. ${idea.pitch}`];
+  const locale = state.locale;
+  const w = wordsFor(locale);
+  const { DIMENSIONS, TIERS } = localeData(locale);
+  const idea = ideaFor(state.ideaId, locale);
+  const lines = [...companyLines(locale), `${w.idea}: ${idea.title}. ${idea.pitch}`];
   const withSources = ["opening", "review", "response", "assumptions"].includes(turn.kind);
   if (withSources) {
-    lines.push("Evidence pack (synthetic; cite these ids only):");
+    lines.push(w.pack);
     for (const s of idea.sources) lines.push(`${s.id} [${s.type}, ${s.date}] ${s.title}: ${s.text}`);
   }
-  if (turn.kind === "opening" || turn.kind === "response") lines.push(`Your dimensions: ${dimensionsFor(turn.agent).map((d) => `"${d}" (${DIMENSIONS[d].label})`).join(", ")}.`);
+  if (turn.kind === "opening" || turn.kind === "response") lines.push(`${w.dimensions}: ${dimensionsFor(turn.agent).map((d) => `"${d}" (${DIMENSIONS[d].label})`).join(", ")}.`);
   if (turn.agent === "delivery" && turn.kind === "opening") {
-    lines.push("Work packages: " + idea.workPackages.map((w) => `${w.id} ${w.label} (${w.role})`).join("; ") + ". Rules: whole person-days, o ≤ m ≤ p, p at most six times o.");
+    lines.push(w.packages(idea.workPackages.map((wp) => `${wp.id} ${wp.label} (${wp.role})`).join("; ")));
   }
   const mine = turn.kind === "response" ? state.claims.filter((c) => c.agent === turn.agent) : state.claims;
   if (turn.kind !== "opening" && mine.length) {
-    lines.push(turn.kind === "response" ? "Your claims:" : "Claims so far:");
-    mine.forEach((c) => lines.push(claimLine(c)));
+    lines.push(turn.kind === "response" ? w.yourClaims : w.claimsSoFar);
+    mine.forEach((c) => lines.push(claimLine(c, locale)));
   }
   if (turn.kind === "review" || (turn.kind === "response" && turn.agent === "delivery")) lines.push(...estimateLines(state));
   if (turn.kind === "response") {
     const ids = new Set(mine.map((c) => c.id));
-    if (turn.agent === "delivery") idea.workPackages.forEach((w) => ids.add(w.id));
+    if (turn.agent === "delivery") idea.workPackages.forEach((wp) => ids.add(wp.id));
     const challenged = state.challenges.filter((ch) => ids.has(ch.target));
     lines.push(challenged.length
-      ? "Challenges to you: " + challenged.map((ch) => `${ch.target} ${ch.issue}: ${ch.note}`).join(" | ")
-      : "No challenges to you.");
+      ? w.challenges + challenged.map((ch) => `${ch.target} ${ch.issue}: ${ch.note}`).join(" | ")
+      : w.noChallenges);
   }
   if (turn.kind === "assumptions") {
-    lines.push("Evidence ranges for the base case: " + ASSUMPTION_KEYS.map((k) => {
+    lines.push(w.ranges(ASSUMPTION_KEYS.map((k) => {
       const a = idea.assumptions[k];
-      const fmt = (v) => (a.unit === "gbp" ? money(v) : a.unit === "percent" ? `${v}%` : String(v));
-      return `${k} (${a.label}) ${fmt(a.low)} to ${fmt(a.high)}, see ${a.sources.join(", ")}`;
-    }).join("; ") + ". Give churn as a percentage number, money in pounds.");
+      const fmt = (v) => (a.unit === "gbp" ? money(v, locale) : a.unit === "percent" ? percent(v, locale) : String(v));
+      return w.rangeItem(k, a.label, fmt(a.low), fmt(a.high), a.sources.join(", "));
+    }).join("; ")));
   }
   if (["review", "case", "brief"].includes(turn.kind)) {
     const said = state.said.slice(turn.kind === "brief" ? -5 : -4).map((s) => `${AGENTS[s.agent].name}: ${s.text.slice(0, 200)}`);
-    if (said.length) lines.push("Board discussion so far:", ...said);
+    if (said.length) lines.push(w.discussion, ...said);
   }
-  lines.push(...computedLines(extra));
-  if (turn.kind === "brief") lines.push(`Tiers: ${Object.entries(TIERS).map(([id, label]) => `${id} = ${label}`).join(", ")}. Policy: invest needs fit ≥ ${POLICY.investNow.strategicFit}, evidence ≥ ${POLICY.investNow.evidenceStrength}, NPV > 0 and payback ≤ ${POLICY.investNow.paybackMonths} months.`);
-  lines.push("Reply with the JSON object now.");
+  lines.push(...computedLines(extra, locale));
+  if (turn.kind === "brief") lines.push(w.tiers(Object.entries(TIERS).map(([id, label]) => `${id} = ${label}`).join(", "), POLICY));
+  lines.push(w.now);
   return lines.join("\n");
 }
 

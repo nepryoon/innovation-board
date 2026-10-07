@@ -2,6 +2,7 @@
 // request. There is no server-side session: the server signs the state and re-validates it each turn.
 
 import { IDEAS, AGENTS, ASSUMPTION_KEYS, dimensionsFor, sourceIds } from "./data.js";
+import { LOCALES, DEFAULT_LOCALE } from "./locale.js";
 import { rangeError } from "./scoring.js";
 
 export const TURN_ORDER = Object.freeze([
@@ -30,11 +31,13 @@ export function turnAt(index) {
   return TURN_ORDER[index];
 }
 
-export function initialState(ideaId, mode) {
+// The locale is part of the signed state: it is fixed when the run starts and cannot change during it.
+export function initialState(ideaId, mode, locale = DEFAULT_LOCALE) {
   return {
     v: 1,
     ideaId,
     mode,
+    locale,
     turn: 0,
     claims: [],
     said: [],
@@ -60,11 +63,12 @@ const strList = (v, maxItems, maxLen) => Array.isArray(v) && v.length <= maxItem
 export function validateState(state) {
   const fail = (error) => ({ ok: false, error });
   if (!isObj(state)) return fail("State must be an object.");
-  const keys = ["v", "ideaId", "mode", "turn", "claims", "said", "challenges", "estimates", "revisedPackages", "assumptions", "chairSuggestion", "chairNotes", "mindNotes", "figureStrikes", "usage", "sig"];
+  const keys = ["v", "ideaId", "mode", "locale", "turn", "claims", "said", "challenges", "estimates", "revisedPackages", "assumptions", "chairSuggestion", "chairNotes", "mindNotes", "figureStrikes", "usage", "sig"];
   if (!onlyKeys(state, keys)) return fail("State has unexpected fields.");
   if (state.v !== 1) return fail("Unsupported state version.");
   if (typeof state.ideaId !== "string" || !Object.hasOwn(IDEAS, state.ideaId)) return fail("Unknown idea.");
   if (!MODES.includes(state.mode)) return fail("Unknown mode.");
+  if (!LOCALES.includes(state.locale)) return fail("Unknown locale.");
   if (!isInt(state.turn, 0, MAX_TURNS)) return fail("Turn out of range.");
   if (state.turn >= MAX_TURNS) return fail("The board has already used all its turns.");
   const idea = IDEAS[state.ideaId];
