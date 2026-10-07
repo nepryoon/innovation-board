@@ -1,5 +1,6 @@
 // Runs the live board for every idea and saves each validated transcript as JSON.
-// Usage: DEEPSEEK_API_KEY=... node scripts/record-board.mjs [ideaId ...]
+// Usage: DEEPSEEK_API_KEY=... node scripts/record-board.mjs [--locale=it] [--dry-run] [ideaId ...]
+// English recordings are saved as <ideaId>.json, other locales as <ideaId>.<locale>.json.
 // The key is read from the environment only and is never printed or written anywhere.
 
 import { writeFile } from "node:fs/promises";
@@ -7,6 +8,7 @@ import { IDEAS } from "../site/config/board/data.js";
 import { runTurn, startState, buildBrief } from "../site/config/board/engine.js";
 import { resolveModel } from "../site/config/board/llm.js";
 import { TURN_ORDER } from "../site/config/board/protocol.js";
+import { isLocale, DEFAULT_LOCALE } from "../site/config/board/locale.js";
 
 const env = { DEEPSEEK_API_KEY: process.env.DEEPSEEK_API_KEY, BOARD_LLM_MODEL: process.env.BOARD_LLM_MODEL };
 if (!env.DEEPSEEK_API_KEY) {
@@ -16,10 +18,16 @@ if (!env.DEEPSEEK_API_KEY) {
 const args = process.argv.slice(2);
 const dryRun = args.includes("--dry-run");
 const only = args.filter((a) => !a.startsWith("--"));
+const locale = (args.find((a) => a.startsWith("--locale=")) || `--locale=${DEFAULT_LOCALE}`).slice(9);
+if (!isLocale(locale)) {
+  console.error(`Unknown locale: ${locale}`);
+  process.exit(1);
+}
+const fileName = (ideaId) => `${ideaId}${locale === DEFAULT_LOCALE ? "" : `.${locale}`}.json`;
 const OUT = new URL("../site/demos/innovation-board/recordings/", import.meta.url);
 
 async function recordIdea(ideaId) {
-  let state = startState(ideaId, "live");
+  let state = startState(ideaId, "live", locale);
   const turns = [];
   let invalidReplies = 0;
   while (turns.length < TURN_ORDER.length) {
@@ -35,6 +43,7 @@ async function recordIdea(ideaId) {
     synthetic: true,
     note: "Recorded live board run on synthetic data. Replayed through the same citation check, figure filter and computations.",
     ideaId,
+    locale,
     model: resolveModel(env),
     recordedAt: new Date().toISOString().slice(0, 10),
     turns,
@@ -51,7 +60,7 @@ for (const ideaId of Object.keys(IDEAS)) {
     console.log(`${ideaId}: attempt ${attempt} fell back at turn ${result.at} (${result.reason})`);
   }
   if (!result.ok) { console.log(`${ideaId}: FAILED`); continue; }
-  if (!dryRun) await writeFile(new URL(`${ideaId}.json`, OUT), JSON.stringify(result.recording, null, 2) + "\n");
+  if (!dryRun) await writeFile(new URL(fileName(ideaId), OUT), JSON.stringify(result.recording, null, 2) + "\n");
   const s = result.recording.summary;
   for (const t of result.recording.turns) {
     if (t.invalidReplies.length) console.log(`  invalid ${t.agent}/${t.kind}: ${t.invalidReplies.join(" || ")}`);

@@ -1,0 +1,397 @@
+{
+  "synthetic": true,
+  "note": "Recorded live board run on synthetic data. Replayed through the same citation check, figure filter and computations.",
+  "ideaId": "inspection-planner",
+  "locale": "it",
+  "model": "deepseek-flash",
+  "recordedAt": "2026-10-07",
+  "turns": [
+    {
+      "agent": "strategy",
+      "round": 1,
+      "kind": "opening",
+      "output": {
+        "message": "L'add-on si innesta su Dispatch, Field e Ledger e risponde a una lacuna documentata nelle trattative perse e nei ticket, senza aprire nuovi canali di vendita. Lo spike conferma la fattibilità del motore, ma la migrazione dei fogli di calcolo resta critica: il fit strategico è buono, l'esecuzione è il vero rischio.",
+        "claims": [
+          {
+            "dimension": "fit",
+            "score": 4,
+            "source": "s1",
+            "quote": "In 61 di queste il potenziale cliente ha indicato la gestione delle verifiche come una lacuna",
+            "reason": "Domanda già espressa sul campo: colma un vuoto che oggi costa trattative."
+          },
+          {
+            "dimension": "fit",
+            "score": 4,
+            "source": "s2",
+            "quote": "1.240 chiedevano come pianificare verifiche ricorrenti o allegare certificati agli interventi",
+            "reason": "Riduce il costo di assistenza, in linea con la priorità di efficienza."
+          },
+          {
+            "dimension": "fit",
+            "score": 5,
+            "source": "s9",
+            "quote": "un motore di regole per 12 tipi di verifica sul modello di intervento esistente",
+            "reason": "Riusa il modello dati e le competenze interne, senza nuove piattaforme."
+          },
+          {
+            "dimension": "fit",
+            "score": 2,
+            "source": "s9",
+            "quote": "La migrazione dei fogli di calcolo dei clienti no, perché i nomi dei siti raramente corrispondono ai nostri archivi",
+            "reason": "L'onboarding dei dati resta un ostacolo concreto alla vendita dell'add-on."
+          }
+        ]
+      },
+      "usage": {
+        "promptTokens": 2182,
+        "completionTokens": 390
+      },
+      "invalidReplies": []
+    },
+    {
+      "agent": "market",
+      "round": 1,
+      "kind": "opening",
+      "output": {
+        "message": "La domanda esiste ma è disomogenea: forte nei grandi clienti e nei casi di conformità critica, debole nelle piccole imprese. La stima di 140 mln € va presa con cautela, il sondaggio e la nota previsionale sono le fonti più solide. Concorrenza presente ma con lacune sfruttabili.",
+        "claims": [
+          {
+            "dimension": "market",
+            "score": 4,
+            "source": "s5",
+            "quote": "il 41% indica uno scadenzario delle verifiche integrato come la funzionalità più desiderata",
+            "reason": "Domanda dichiarata ampia tra i clienti che gestiscono verifiche per conto terzi."
+          },
+          {
+            "dimension": "market",
+            "score": 4,
+            "source": "s6",
+            "quote": "tra 80 e 160 aziende clienti adottino l'add-on in ciascuno dei primi tre anni",
+            "reason": "Previsione interna credibile, ma da scontare per churn e incertezza di lancio."
+          },
+          {
+            "dimension": "market",
+            "score": 3,
+            "source": "s7",
+            "quote": "Il report stima il segmento in 140 mln €",
+            "reason": "Dimensione utile come ordine di grandezza, ma possibile doppio conteggio dei bundle."
+          },
+          {
+            "dimension": "market",
+            "score": 3,
+            "source": "s8",
+            "quote": "Nessuno dei due si integra con un'app per i tecnici, che è proprio dove i certificati vengono acquisiti",
+            "reason": "Spazio competitivo reale, ma i rivali restano presenti nelle gare."
+          }
+        ]
+      },
+      "usage": {
+        "promptTokens": 2201,
+        "completionTokens": 384
+      },
+      "invalidReplies": []
+    },
+    {
+      "agent": "delivery",
+      "round": 1,
+      "kind": "opening",
+      "output": {
+        "message": "Fattibilità buona sul motore di pianificazione, critica la migrazione dei fogli di calcolo: i nomi dei siti non coincidono con i nostri archivi. Rischio contenuto sul mercato, ma il costo di esercizio e l'adozione restano da verificare. Stime prudenti, con il pilota come filtro prima di impegnare tutto il team.",
+        "claims": [
+          {
+            "dimension": "feasibility",
+            "score": 4,
+            "source": "s9",
+            "quote": "Ricorrenze e scadenze dei certificati hanno funzionato bene",
+            "reason": "Il motore di regole esiste già in spike e regge ricorrenze e certificati."
+          },
+          {
+            "dimension": "feasibility",
+            "score": 2,
+            "source": "s9",
+            "quote": "i nomi dei siti raramente corrispondono ai nostri archivi",
+            "reason": "La migrazione dei dati dei clienti è il vero collo di bottiglia tecnico."
+          },
+          {
+            "dimension": "risk",
+            "score": 4,
+            "source": "s8",
+            "quote": "Nessuno dei due si integra con un'app per i tecnici",
+            "reason": "I concorrenti sono rigidi o parziali: spazio per un add-on integrato."
+          },
+          {
+            "dimension": "risk",
+            "score": 3,
+            "source": "s6",
+            "quote": "Add-on analoghi hanno perso tra il 5% e il 10% degli abbonati all'anno",
+            "reason": "Churn degli add-on e adozione incerta pesano sul business case."
+          }
+        ],
+        "estimates": [
+          {
+            "wp": "w1",
+            "o": 25,
+            "m": 40,
+            "p": 70
+          },
+          {
+            "wp": "w2",
+            "o": 20,
+            "m": 35,
+            "p": 60
+          },
+          {
+            "wp": "w3",
+            "o": 30,
+            "m": 55,
+            "p": 110
+          },
+          {
+            "wp": "w4",
+            "o": 15,
+            "m": 25,
+            "p": 45
+          },
+          {
+            "wp": "w5",
+            "o": 20,
+            "m": 30,
+            "p": 55
+          }
+        ]
+      },
+      "usage": {
+        "promptTokens": 2373,
+        "completionTokens": 502
+      },
+      "invalidReplies": []
+    },
+    {
+      "agent": "auditor",
+      "round": 2,
+      "kind": "review",
+      "output": {
+        "message": "Audit: diverse citazioni sono troncate o non provano l'affermazione; c7 si fonda su una stima che la fonte stessa dichiara inaffidabile e c6 su una previsione interna, non su domanda osservata. Il sondaggio misura intenzioni, non acquisti. La stima w3 non copre la migrazione, che lo spike indica come critica.",
+        "challenges": [
+          {
+            "target": "c2",
+            "issue": "unsupported",
+            "note": "I ticket provano richieste di assistenza, non propensione all'acquisto."
+          },
+          {
+            "target": "c3",
+            "issue": "optimistic",
+            "note": "Lo spike copre 12 tipi di verifica, non l'intero scadenzario richiesto."
+          },
+          {
+            "target": "c5",
+            "issue": "unsupported",
+            "note": "Funzionalità desiderata non equivale a disponibilità a pagare un add-on."
+          },
+          {
+            "target": "c6",
+            "issue": "weak",
+            "note": "Previsione interna del customer success, non domanda osservata; base ampia."
+          },
+          {
+            "target": "c7",
+            "issue": "unverified",
+            "note": "La fonte avverte di possibile doppio conteggio dei bundle."
+          },
+          {
+            "target": "c8",
+            "issue": "weak",
+            "note": "Fonte sui concorrenti, non indipendente né verificabile."
+          },
+          {
+            "target": "w3",
+            "issue": "optimistic",
+            "note": "Copre migrazione e integrazione, ma lo spike la segnala critica."
+          },
+          {
+            "target": "w5",
+            "issue": "optimistic",
+            "note": "Pilota sottostimato rispetto al costo di esercizio indicato dallo spike."
+          }
+        ]
+      },
+      "usage": {
+        "promptTokens": 2947,
+        "completionTokens": 396
+      },
+      "invalidReplies": []
+    },
+    {
+      "agent": "strategy",
+      "round": 2,
+      "kind": "response",
+      "output": {
+        "message": "Accolgo la contestazione su c2: i ticket documentano attrito operativo, non propensione all'acquisto, quindi riduco il punteggio. Su c3 mantengo la coerenza strategica alta, ma riconosco che lo spike copre 12 tipi di verifica e non l'intero scadenzario. Nessuna nuova affermazione.",
+        "revisions": [
+          {
+            "claim": "c2",
+            "score": 3,
+            "reason": "I ticket provano attrito operativo ricorrente, non propensione all'acquisto: coerenza strategica reale ma indiretta."
+          },
+          {
+            "claim": "c3",
+            "score": 4,
+            "reason": "Il motore regge 12 tipi di verifica sul modello esistente, ma non copre l'intero scadenzario."
+          }
+        ],
+        "claims": []
+      },
+      "usage": {
+        "promptTokens": 2423,
+        "completionTokens": 195
+      },
+      "invalidReplies": []
+    },
+    {
+      "agent": "market",
+      "round": 2,
+      "kind": "response",
+      "output": {
+        "message": "Accolgo le contestazioni: la desiderabilità non è disponibilità a pagare e la previsione interna resta un'indicazione, non domanda osservata. Sul segmento il doppio conteggio dei bundle impone prudenza. La differenziazione competitiva resta valida. Nessuna nuova affermazione necessaria.",
+        "revisions": [
+          {
+            "claim": "c5",
+            "score": 3,
+            "reason": "Funzionalità più desiderata non dimostra disponibilità a pagare l'add-on; il 34% probabile resta dichiarato, non osservato."
+          },
+          {
+            "claim": "c6",
+            "score": 3,
+            "reason": "Stima interna del customer success su base ampia, non domanda osservata; utile come ordine di grandezza."
+          },
+          {
+            "claim": "c7",
+            "score": 2,
+            "reason": "La fonte stessa avverte che la stima può contare due volte i prodotti venduti in bundle."
+          }
+        ],
+        "claims": []
+      },
+      "usage": {
+        "promptTokens": 2427,
+        "completionTokens": 222
+      },
+      "invalidReplies": []
+    },
+    {
+      "agent": "delivery",
+      "round": 2,
+      "kind": "response",
+      "output": {
+        "message": "Nessuna contestazione ricevuta: confermo punteggi e stime. Le evidenze su ricorrenze, disallineamento dei nomi dei siti e integrazione con l'app restano valide; la migrazione dei fogli di calcolo è il rischio principale e va gestita nel pilota.",
+        "revisions": [],
+        "estimates": []
+      },
+      "usage": {
+        "promptTokens": 2491,
+        "completionTokens": 84
+      },
+      "invalidReplies": []
+    },
+    {
+      "agent": "finance",
+      "round": 3,
+      "kind": "assumptions",
+      "output": {
+        "message": "Per lo scenario base propongo valori prudenti ma centrali negli intervalli delle evidenze: prezzo medio, adozione contenuta, churn e costo di esercizio verso il centro-basso. Così il business case resta difendibile senza scommettere su un nuovo canale di vendita.",
+        "assumptions": [
+          {
+            "key": "price",
+            "value": 1950,
+            "source": "s1",
+            "quote": "un prezzo tra 1.500 € e 2.400 € all'anno",
+            "rationale": "Punto medio dell'intervallo indicato dagli account manager."
+          },
+          {
+            "key": "adoption",
+            "value": 100,
+            "source": "s6",
+            "quote": "tra 80 e 160 aziende clienti adottino l'add-on in ciascuno dei primi tre anni",
+            "rationale": "Adozione prudente, sotto la metà della base clienti."
+          },
+          {
+            "key": "churn",
+            "value": 8,
+            "source": "s6",
+            "quote": "Add-on analoghi hanno perso tra il 5% e il 10% degli abbonati all'anno",
+            "rationale": "Churn verso l'alto per cautela sui ricavi ricorrenti."
+          },
+          {
+            "key": "running",
+            "value": 65000,
+            "source": "s9",
+            "quote": "Il costo di esercizio è stimato tra 50.000 € e 80.000 € all'anno",
+            "rationale": "Valore intermedio tra archiviazione e assistenza."
+          }
+        ]
+      },
+      "usage": {
+        "promptTokens": 2926,
+        "completionTokens": 347
+      },
+      "invalidReplies": []
+    },
+    {
+      "agent": "finance",
+      "round": 3,
+      "kind": "case",
+      "output": {
+        "message": "Nello scenario base il VAN è 389.407 €, con ROI 454% e payback 16,6 mesi. Il divario tra pessimistico (76.766 €) e ottimistico (1.109.188 €) resta ampio. La variabile che pesa di più è il numero di nuove aziende clienti all'anno: il VAN base si azzera a 42 all'anno. Il business case regge solo con adozione sostenuta."
+      },
+      "usage": {
+        "promptTokens": 1838,
+        "completionTokens": 110
+      },
+      "invalidReplies": []
+    },
+    {
+      "agent": "chair",
+      "round": 3,
+      "kind": "brief",
+      "output": {
+        "message": "Le evidenze sostengono un add-on coerente con la piattaforma: 1.240 richieste sui ticket, regole per 12 tipi di verifica, VAN base 389.407 € e payback 16,6 mesi. Restano dubbi su disponibilità a pagare e disallineamento dei nomi dei siti, che rende la migrazione dei fogli di calcolo il vero collo di bottiglia. Il divario tra scenari resta ampio. La politica indica di investire.",
+        "tier": "invest",
+        "dissent": [
+          "Milo e Dara dubitano dell'adozione: la desiderabilità non è disponibilità a pagare e il churn degli add-on analoghi resta incerto."
+        ],
+        "mindChangers": [
+          "Una pagina di preordine con conversioni reali, o un tasso di migrazione dei nomi dei siti superiore al previsto, sposterebbe il giudizio."
+        ]
+      },
+      "usage": {
+        "promptTokens": 2173,
+        "completionTokens": 212
+      },
+      "invalidReplies": []
+    }
+  ],
+  "summary": {
+    "tier": "Investire ora",
+    "counters": {
+      "claimsMade": 12,
+      "claimsAccepted": 12,
+      "unsupported": 0,
+      "struckFigures": 0,
+      "screenedPassages": 0
+    },
+    "metrics": {
+      "strategicFit": 65,
+      "marketPull": 55,
+      "feasibility": 60,
+      "evidenceStrength": 62,
+      "financialReturn": 100,
+      "risk": 70
+    },
+    "usage": {
+      "promptTokens": 23981,
+      "completionTokens": 2842,
+      "llmTurns": 10
+    }
+  }
+}

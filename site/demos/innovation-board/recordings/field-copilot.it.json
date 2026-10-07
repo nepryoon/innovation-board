@@ -1,0 +1,398 @@
+{
+  "synthetic": true,
+  "note": "Recorded live board run on synthetic data. Replayed through the same citation check, figure filter and computations.",
+  "ideaId": "field-copilot",
+  "locale": "it",
+  "model": "deepseek-flash",
+  "recordedAt": "2026-10-07",
+  "turns": [
+    {
+      "agent": "strategy",
+      "round": 1,
+      "kind": "opening",
+      "output": {
+        "message": "L'idea tocca Brindle Field e la stesura dei rapporti, ma le priorità restano add-on sui prodotti attuali e riduzione del costo del servizio, senza nuovi canali. La domanda dei clienti è debole e la diagnosi da foto non è ancora affidabile: meglio un add-on incrementale che un salto rivoluzionario.",
+        "claims": [
+          {
+            "dimension": "fit",
+            "score": 4,
+            "source": "s6",
+            "quote": "La stesura dei rapporti in Brindle Field ha generato 410 ticket",
+            "reason": "Il bisogno più sentito riguarda un prodotto già in portafoglio, coerente con gli add-on."
+          },
+          {
+            "dimension": "fit",
+            "score": 3,
+            "source": "s9",
+            "quote": "Nessuna trattativa persa nel primo semestre 2026 ha indicato l'AI come motivo.",
+            "reason": "L'AI non è ancora un requisito d'acquisto: spinta commerciale limitata."
+          },
+          {
+            "dimension": "fit",
+            "score": 2,
+            "source": "s7",
+            "quote": "Per un'accuratezza utile servirebbero molte più foto etichettate di quante ne abbiamo.",
+            "reason": "La diagnosi da foto richiede dati e competenze che oggi non abbiamo."
+          },
+          {
+            "dimension": "fit",
+            "score": 2,
+            "source": "s4",
+            "quote": "Per la diagnosi non pagherei molto",
+            "reason": "Il valore percepito è sulla stesura dei rapporti, non sulla diagnosi."
+          }
+        ]
+      },
+      "usage": {
+        "promptTokens": 2158,
+        "completionTokens": 355
+      },
+      "invalidReplies": []
+    },
+    {
+      "agent": "market",
+      "round": 1,
+      "kind": "opening",
+      "output": {
+        "message": "Il richiamo di mercato è rumoroso ma sottile: le previsioni da trend, keynote e blog fornitore sono ampie e non verificate, mentre i dati interni mostrano domanda concentrata sulla stesura dei rapporti, non sulla diagnosi. Peso maggiore a sondaggio, ticket e pipeline; prudenza sulle fonti di parte.",
+        "claims": [
+          {
+            "dimension": "market",
+            "score": 2,
+            "source": "s1",
+            "quote": "il mercato dell'AI per l'assistenza sul campo raggiungerà 48 miliardi di euro entro il 2030, con una crescita del 37% all'anno",
+            "reason": "Previsione ampia da articolo di tendenza, senza metodologia: indica attrattività ma va scontata."
+          },
+          {
+            "dimension": "market",
+            "score": 2,
+            "source": "s3",
+            "quote": "Per le previsioni non è stata indicata alcuna fonte di dati.",
+            "reason": "Keynote suggestivo ma privo di dati: il 70% citato non è verificabile."
+          },
+          {
+            "dimension": "market",
+            "score": 3,
+            "source": "s5",
+            "quote": "cinque si sono dette interessate a un assistente AI per i tecnici, due hanno detto che lo pagherebbero",
+            "reason": "Domanda reale ma ristretta: 2 su 14 paganti e prezzo 600-1.500 € all'anno."
+          },
+          {
+            "dimension": "market",
+            "score": 2,
+            "source": "s6",
+            "quote": "Tre dei 9.800 ticket di assistenza chiedevano funzionalità di AI.",
+            "reason": "Segnale di pull debole: la stesura rapporti genera 410 ticket, la diagnosi nessuno."
+          }
+        ]
+      },
+      "usage": {
+        "promptTokens": 2177,
+        "completionTokens": 411
+      },
+      "invalidReplies": []
+    },
+    {
+      "agent": "delivery",
+      "round": 1,
+      "kind": "opening",
+      "output": {
+        "message": "L'idea è tecnicamente proponibile ma la fattibilità è frenata dalla scarsità di dati etichettati e dall'accuratezza insufficiente dello spike. Il rischio è alto: i clienti chiedono la stesura dei rapporti, non la diagnosi, e il churn degli add-on AI è elevato. Meglio partire da un perimetro ridotto, con revisione umana obbligatoria.",
+        "claims": [
+          {
+            "dimension": "feasibility",
+            "score": 2,
+            "source": "s7",
+            "quote": "Ha individuato il guasto corretto nel 58% dei casi",
+            "reason": "Accuratezza lontana da un uso autonomo sul campo."
+          },
+          {
+            "dimension": "feasibility",
+            "score": 3,
+            "source": "s6",
+            "quote": "La stesura dei rapporti in Brindle Field ha generato 410 ticket",
+            "reason": "Base dati e integrazione già esistenti su cui costruire."
+          },
+          {
+            "dimension": "risk",
+            "score": 2,
+            "source": "s5",
+            "quote": "sette temono diagnosi sbagliate su guasti a impianti gas o elettrici",
+            "reason": "Timori di sicurezza e responsabilità frenano l'adozione."
+          },
+          {
+            "dimension": "risk",
+            "score": 2,
+            "source": "s8",
+            "quote": "un churn tra il 15% e il 35% all'anno",
+            "reason": "Add-on AI esposti a forte abbandono dopo la novità."
+          }
+        ],
+        "estimates": [
+          {
+            "wp": "w1",
+            "o": 40,
+            "m": 70,
+            "p": 140
+          },
+          {
+            "wp": "w2",
+            "o": 60,
+            "m": 110,
+            "p": 220
+          },
+          {
+            "wp": "w3",
+            "o": 25,
+            "m": 45,
+            "p": 90
+          },
+          {
+            "wp": "w4",
+            "o": 30,
+            "m": 55,
+            "p": 110
+          },
+          {
+            "wp": "w5",
+            "o": 20,
+            "m": 40,
+            "p": 80
+          }
+        ]
+      },
+      "usage": {
+        "promptTokens": 2343,
+        "completionTokens": 484
+      },
+      "invalidReplies": []
+    },
+    {
+      "agent": "auditor",
+      "round": 2,
+      "kind": "review",
+      "output": {
+        "message": "Le fonti promozionali (s1, s2, s3) sostengono solo entusiasmo, non domanda: s3 è privo di fonte dati e c5 resta non supportato. La domanda reale è debole e concentrata sulla stesura dei rapporti, non sulla diagnosi. Lo spike non è conclusivo e i costi ricorrenti di inferenza non compaiono in nessuna stima: w1-w5 sembrano ottimistiche. Le stime w1 e w2 vanno riviste al rialzo.",
+        "challenges": [
+          {
+            "target": "c2",
+            "issue": "optimistic",
+            "note": "L'assenza di trattative perse non prova domanda: s9 indica interesse generico, non un requisito d'acquisto."
+          },
+          {
+            "target": "c7",
+            "issue": "weak",
+            "note": "Base di 14 aziende, in prevalenza molto piccole: campione troppo esiguo per sostenere un business case."
+          },
+          {
+            "target": "c5",
+            "issue": "unsupported",
+            "note": "Il dato di mercato è una previsione promozionale senza fonte dati, non un'evidenza di domanda dei clienti."
+          },
+          {
+            "target": "w1",
+            "issue": "optimistic",
+            "note": "Non include i costi annui di inferenza e revisione umana indicati in s7, che gravano sul modello."
+          },
+          {
+            "target": "w2",
+            "issue": "optimistic",
+            "note": "s7 segnala che servirebbero molte più foto etichettate: la raccolta dati è sottostimata."
+          },
+          {
+            "target": "w5",
+            "issue": "optimistic",
+            "note": "La revisione di sicurezza su guasti a gas ed elettrici è critica: s5 segnala timori diffusi."
+          }
+        ]
+      },
+      "usage": {
+        "promptTokens": 2886,
+        "completionTokens": 415
+      },
+      "invalidReplies": []
+    },
+    {
+      "agent": "strategy",
+      "round": 2,
+      "kind": "response",
+      "output": {
+        "message": "Accolgo la contestazione: l'assenza di trattative perse non dimostra domanda, ma conferma che l'AI non è un requisito d'acquisto. La coerenza strategica resta debole: il valore sta nella stesura dei rapporti, non nella diagnosi. Aggiungo un dato sui ticket.",
+        "revisions": [
+          {
+            "claim": "c2",
+            "score": 2,
+            "reason": "L'interesse in demo non è domanda: nessun requisito d'acquisto, quindi coerenza strategica più bassa."
+          }
+        ],
+        "claims": [
+          {
+            "id": "c5",
+            "dimension": "fit",
+            "score": 3,
+            "source": "s6",
+            "quote": "Nelle votazioni dei clienti le note vocali sono al 23° posto su 40 richieste di funzionalità"
+          }
+        ]
+      },
+      "usage": {
+        "promptTokens": 2349,
+        "completionTokens": 196
+      },
+      "invalidReplies": []
+    },
+    {
+      "agent": "market",
+      "round": 2,
+      "kind": "response",
+      "output": {
+        "message": "Accolgo entrambe le contestazioni: il campione di 14 aziende è troppo esiguo e la previsione da 48 miliardi € è di natura promozionale. La domanda reale resta debole e concentrata sulle aziende molto piccole, fuori dal nostro target. Nessuna nuova affermazione: le evidenze disponibili non aggiungono nulla.",
+        "revisions": [
+          {
+            "claim": "c7",
+            "score": 2,
+            "reason": "Campione di 14 aziende, in prevalenza molto piccole: non sostiene un business case."
+          },
+          {
+            "claim": "c5",
+            "score": 1,
+            "reason": "Previsione promozionale senza fonte dati, non misura la domanda dei clienti."
+          }
+        ],
+        "claims": []
+      },
+      "usage": {
+        "promptTokens": 2410,
+        "completionTokens": 179
+      },
+      "invalidReplies": []
+    },
+    {
+      "agent": "delivery",
+      "round": 2,
+      "kind": "response",
+      "output": {
+        "message": "Contestazioni fondate: la stima di w1 non copriva i costi ricorrenti di inferenza e revisione umana, e w2 sottostimava la raccolta di foto etichettate. Confermo le valutazioni c9-c12, che riflettono proprio questi limiti. Rivedo al rialzo gli scenari ottimistici di w1 e w2.",
+        "revisions": [],
+        "estimates": [
+          {
+            "wp": "w1",
+            "o": 55,
+            "m": 80,
+            "p": 150
+          },
+          {
+            "wp": "w2",
+            "o": 85,
+            "m": 140,
+            "p": 260
+          }
+        ]
+      },
+      "usage": {
+        "promptTokens": 2522,
+        "completionTokens": 154
+      },
+      "invalidReplies": []
+    },
+    {
+      "agent": "finance",
+      "round": 3,
+      "kind": "assumptions",
+      "output": {
+        "message": "Scenario base prudente: prezzo medio-basso, adozione contenuta e churn elevato, coerenti con l'interesse limitato emerso dalle evidenze. Il costo di esercizio si colloca nella parte bassa dell'intervallo per contenere il rischio.",
+        "assumptions": [
+          {
+            "key": "price",
+            "value": 900,
+            "source": "s5",
+            "quote": "I rispondenti hanno indicato un prezzo tra 600 € e 1.500 € all'anno.",
+            "rationale": "Prezzo nella fascia bassa, dato l'interesse limitato dei clienti."
+          },
+          {
+            "key": "adoption",
+            "value": 15,
+            "source": "s9",
+            "quote": "tra 10 e 60 aziende all'anno potrebbero acquistare un add-on AI premium",
+            "rationale": "Adozione contenuta, in linea con le stime prudenti degli account manager."
+          },
+          {
+            "key": "churn",
+            "value": 30,
+            "source": "s8",
+            "quote": "un churn tra il 15% e il 35% all'anno, man mano che l'effetto novità svanisce",
+            "rationale": "Churn alto per il rischio che l'effetto novità svanisca."
+          },
+          {
+            "key": "running",
+            "value": 150000,
+            "source": "s7",
+            "quote": "Inferenza e revisione umana costerebbero tra 120.000 € e 220.000 € all'anno.",
+            "rationale": "Costo di esercizio nella fascia bassa per limitare l'impegno."
+          }
+        ]
+      },
+      "usage": {
+        "promptTokens": 2904,
+        "completionTokens": 400
+      },
+      "invalidReplies": []
+    },
+    {
+      "agent": "finance",
+      "round": 3,
+      "kind": "case",
+      "output": {
+        "message": "Il caso base chiude con VAN -570.935 €, ROI -267% e payback non raggiunto entro 3 anni. Gli scenari oscillano da -799.091 € a -209.996 € di VAN: nessuno è positivo. La variabile che sposta di più il risultato è il costo di esercizio annuo, quindi la sostenibilità economica resta il nodo decisivo del business case."
+      },
+      "usage": {
+        "promptTokens": 1816,
+        "completionTokens": 95
+      },
+      "invalidReplies": []
+    },
+    {
+      "agent": "chair",
+      "round": 3,
+      "kind": "brief",
+      "output": {
+        "message": "Le evidenze sostengono un interesse limitato: pochi clienti paganti, accuratezza diagnostica al 58%, churn elevato e nessuno scenario con VAN positivo. Il board concorda sul rinvio; resta il dissenso sull'accuratezza raggiungibile. Un test su 2.000 foto etichettate, 12.000 € in 6 settimane, chiarirebbe se l'idea merita un pilota.",
+        "tier": "park",
+        "dissent": [
+          "Dara ritiene l'accuratezza migliorabile con più dati; Milo la giudica strutturalmente insufficiente per la diagnosi sul campo."
+        ],
+        "mindChangers": [
+          "Accuratezza sopra l'80% nel test su 2.000 foto; almeno due clienti disposti a firmare un add-on a pagamento."
+        ]
+      },
+      "usage": {
+        "promptTokens": 2135,
+        "completionTokens": 185
+      },
+      "invalidReplies": []
+    }
+  ],
+  "summary": {
+    "tier": "Accantonare",
+    "counters": {
+      "claimsMade": 13,
+      "claimsAccepted": 11,
+      "unsupported": 1,
+      "struckFigures": 3,
+      "screenedPassages": 5
+    },
+    "metrics": {
+      "strategicFit": 52,
+      "marketPull": 40,
+      "feasibility": 50,
+      "evidenceStrength": 40,
+      "financialReturn": 0,
+      "risk": 40
+    },
+    "usage": {
+      "promptTokens": 23700,
+      "completionTokens": 2874,
+      "llmTurns": 10
+    }
+  }
+}
