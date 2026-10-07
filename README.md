@@ -1,6 +1,7 @@
 # Innovation Board
 
-**Live demo:** https://www.neuromorphicinference.com/demos/innovation-board/
+**Live demo:** https://www.neuromorphicinference.com/demos/innovation-board/ (English) ·
+https://www.neuromorphicinference.com/demos/innovation-board/it/ (Italiano)
 
 A board of six AI agents assesses the commercial potential of a software product idea and debates it in a
 live, chat-style view. Every claim must quote the evidence, figures that nobody can trace are struck from
@@ -152,6 +153,34 @@ language model can still misread a source within the rules: the checks guarantee
 traceable to the evidence or to the code, not that it is right. ROI below −100% is possible when running
 costs exceed revenue. A person makes every investment decision.
 
+## Two locales, one engine
+
+The demo runs in English and Italian. Both pages load the same `app.js` and `board.css`; the page's `lang`
+attribute picks the interface strings, and the server sends data and messages in the same locale.
+
+- **Locale as input.** `start.locale` is `"en"` (default) or `"it"`; anything else is refused. The locale is
+  part of the signed run state, so it cannot change during a run. `GET /api/board/turn?locale=it` returns
+  the Italian configuration.
+- **Words only.** `config/board/data-it.js` holds the Italian text of the company, ideas, sources, work
+  packages, assumptions, tiers and roles; ids, numbers and ranges come from `data.js`. Code computes the
+  same development cost, NPV, ROI, payback and tier in both locales (a test checks it). The Italian page
+  shows the same values in euro that the English page shows in pounds.
+- **Guardrails per locale.** Italian quotes are checked against the Italian sources. The figure filter
+  reads Italian formats and units (1.240; 12,5%; 438 mila €; 1,2 milioni di euro; mln, mld; per cento;
+  mesi, settimane, giorni, giornate, anni) with the same rounding rules; the source screen strikes the
+  same five hype passages in the Italian trap sources.
+- **Prompts.** Italian runs keep the English instructions and ask for every statement in Italian and every
+  quote copied from the Italian pack; JSON keys, ids and enum values stay in English.
+- **Recordings.** Each locale has its own validated live run per idea: `<idea>.json` (English) and
+  `<idea>.it.json`. The recorded fallback replays the recording of the run's locale.
+
+To add a third locale (say `fr`): add `fr` to `LOCALES` in `config/board/locale.js` with an overlay like
+`data-fr.js`, add its sentences to `config/board/messages.js` and its number format and unit words to
+`config/board/guardrails.js`, add a `fr` dictionary to the interface strings in `app.js`, copy
+`demos/innovation-board/it/` to `fr/` and translate the page, add `hreflang` links on every page, then
+record with `node scripts/record-board.mjs --locale=fr`. The test for untranslated strings in
+`test/board-italian.test.js` shows how to check the new locale.
+
 ## Run locally
 
 Requirements: Node 20 or later. There are no runtime dependencies and no build step.
@@ -166,8 +195,8 @@ scripts/sync-to-site.sh ../neuromorphic-inference-lab-site
 # Serve the site with the Pages Functions; put DEEPSEEK_API_KEY in the site's .dev.vars for live mode
 cd ../neuromorphic-inference-lab-site && npx wrangler pages dev .
 
-# Re-record the fallback transcripts (spends API credit)
-DEEPSEEK_API_KEY=... node scripts/record-board.mjs [ideaId ...]
+# Re-record the fallback transcripts (spends API credit); --locale=it for the Italian ones
+DEEPSEEK_API_KEY=... node scripts/record-board.mjs [--locale=it] [ideaId ...]
 ```
 
 Without a key the demo runs in recorded mode. Optional variables: `BOARD_LLM_MODEL`,
@@ -177,9 +206,11 @@ Without a key the demo runs in recorded mode. Optional variables: `BOARD_LLM_MOD
 
 ```
 site/                                  mirrors the site repository's paths
-  demos/innovation-board/              page, client script, recorded runs
+  demos/innovation-board/              English page, shared client script and styles, recorded runs
+  demos/innovation-board/it/           Italian page
   functions/api/board/turn.js          the Pages Function (GET config, POST one turn)
-  config/board/                        data, guardrails, scoring, protocol, LLM client, engine
+  config/board/                        data (data-it.js: Italian text), locales, messages, guardrails,
+                                       scoring, protocol, LLM client, engine
   test/board-*.test.js                 node --test suites
 scripts/sync-to-site.sh                copy into the site repo, removing files this demo no longer has
 scripts/record-board.mjs               record a validated live run per idea
